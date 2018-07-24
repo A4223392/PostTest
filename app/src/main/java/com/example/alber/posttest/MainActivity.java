@@ -84,19 +84,19 @@ public class MainActivity extends AppCompatActivity {
 
                             String path = "http://192.168.88.246/api/member/";   //路徑
                             Map<String, String> params = new HashMap<>();
-                            params.put("account", "A42233929");
+                            params.put("account", "A422339210@g.pccu.edu.tw");
                             params.put("identifier", "12345678");
+                            params.put("membertype", "1");
                             params.put("name", "江建呈");
                             params.put("nickname", "江");
                             params.put("password", "MySQL0819");
                             params.put("localpicture", "images\\usr\\pic001.jpg");
                             params.put("dbpicture", "images\\usr\\pic020.jpg");
-                            params.put("membertype_id", "1");
 
                             Message message = new Message();
                             message.what = MyMessages.Post_Progressing;
                             Bundle bundle = new Bundle();
-                            bundle.putString("PostReturnValue", HttpUtils.SubmitPostData(path, params, "Utf-8"));
+                            bundle.putString("PostReturnValue", HttpUtils.SubmitPostData(path, params, "utf-8"));
                             message.setData(bundle);
                             mainHandler.sendMessage(message);
 
@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
                             String[] colName = {
                                     "id", "account", "identifier",
                                     "name", "nickname", "password",
-                                    "localpicture", "dbpicture", "renew_time", "membertype_id"};
+                                    "localpicture", "dbpicture", "renew_time", "membertype"};
                             Message message = new Message();
                             message.what = MyMessages.Get_Progressing;
                             Bundle bundle = new Bundle();
