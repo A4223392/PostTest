@@ -52,10 +52,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class Path {  //注意路徑有無斜線(endpoint)
-        public static final String api_token_jwtauth = "http://104.199.255.45/api-token-jwtauth";
-        public static final String api_token_refresh = "http://104.199.255.45/api-token-refresh/";
-        public static final String member = "http://104.199.255.45/api/member/";
-        public static final String friendShip = "http://104.199.255.45/api/friendship/";
+        public static final String api_token_jwtauth = "http://www.177together.com/api-token-jwtauth";
+        public static final String api_token_refresh = "http://www.177together.com/api-token-refresh/";
+        public static final String member = "http://www.177together.com/api/member/";
+        public static final String friendShip = "http://www.177together.com/api/friendship/";
     }
 
     //https://stackoverflow.com/questions/3806051/accessing-sharedpreferences-through-static-methods
@@ -439,7 +439,7 @@ public class MainActivity extends AppCompatActivity {
                                 JSONObject jsonObj = HttpUtils.Register(Path.member, params);
                                 if (jsonObj.getInt("responseCode") != HttpURLConnection.HTTP_CREATED) { //檢查responseCode
                                     message.what = MyMessages.Error;
-                                    bundle.putString("errorMsg", "註冊失敗！請重新嘗試！");
+                                    bundle.putString("errorMsg", jsonObj.getString("error_msg"));
                                     message.setData(bundle);
                                     registerHandler.sendMessage(message);
 

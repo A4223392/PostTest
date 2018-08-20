@@ -28,9 +28,10 @@ import org.json.JSONTokener;
 public class HttpUtils {
     /**
      * 發送POST請求到伺服器並返回伺服器訊息
+     *
      * @param path   POST的路徑
      * @param params 請求體內容
-     * //@param encode 編碼格式
+     *               //@param encode 編碼格式
      * @return 伺服器返回訊息
      */
     public static JSONObject GetToken(String path, Map<String, String> params) {
@@ -185,7 +186,7 @@ public class HttpUtils {
         return null;
     }
 
-    public static JSONArray Get(String path,String token) { //注意回傳JSONArray
+    public static JSONArray Get(String path, String token) { //注意回傳JSONArray
         HttpURLConnection httpURLConnection = null;
         InputStream inputStream = null;
         try {
@@ -227,6 +228,7 @@ public class HttpUtils {
     /**
      * 轉成JSON格式
      * https://dotblogs.com.tw/newmonkey48/2017/09/21/152425
+     *
      * @param params 來源資料
      * @return 回傳資料
      */
@@ -244,7 +246,8 @@ public class HttpUtils {
 
     /**
      * 處理伺服器的回應結果（將輸入流轉換成字串)
-     * @param inputStream 伺服器的回應輸入流
+     *
+     * @param inputStream  伺服器的回應輸入流
      * @param responseCode 伺服器的回應碼
      * @return 伺服器回應結果轉成JSONObject
      */
@@ -253,7 +256,7 @@ public class HttpUtils {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byte[] data = new byte[1024];
         int len;
-        JSONObject jsonObj ;
+        JSONObject jsonObj;
         if (inputStream == null) {
             try {
                 jsonObj = new JSONObject();
@@ -262,20 +265,18 @@ public class HttpUtils {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-        else {
+        } else {
             try {
                 while ((len = inputStream.read(data)) != -1) {
                     byteArrayOutputStream.write(data, 0, len);
                 }
-                String jsonStr=new String(byteArrayOutputStream.toByteArray());
-                Object obj=new JSONTokener(jsonStr).nextValue();
-                if(obj instanceof JSONObject){  //再檢查一次
+                String jsonStr = new String(byteArrayOutputStream.toByteArray());
+                Object obj = new JSONTokener(jsonStr).nextValue();
+                if (obj instanceof JSONObject) {  //再檢查一次
                     jsonObj = new JSONObject(jsonStr);
                     jsonObj.put("responseCode", responseCode);   //加入回應碼，不需要可刪除
-                }else{  //其他格式
+                } else {  //其他格式
                     jsonObj = null;
-
                 }
                 return jsonObj;
             } catch (Exception e) {
@@ -287,7 +288,8 @@ public class HttpUtils {
 
     /**
      * 處理伺服器的回應結果（將輸入流轉換成字串)
-     * @param inputStream 伺服器的回應輸入流
+     *
+     * @param inputStream  伺服器的回應輸入流
      * @param responseCode 伺服器的回應碼
      * @return 伺服器回應結果轉成JSONArray
      */
@@ -310,7 +312,7 @@ public class HttpUtils {
 
                 jsonArray = new JSONArray(jsonStr); //放入訊息
                 jsonArray.put(jsonObj); //放入回應碼
-            } else if(obj instanceof  JSONObject) {   //其他格式(錯誤訊息為JSON)
+            } else if (obj instanceof JSONObject) {   //其他格式(錯誤訊息為JSON)
                 jsonObj = new JSONObject(jsonStr);
                 jsonObj.put("responseCode", responseCode);  //加入回應碼
 
