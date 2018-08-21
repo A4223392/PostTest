@@ -52,10 +52,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class Path {  //注意路徑有無斜線(endpoint)
-        public static final String api_token_jwtauth = "http://www.177together.com/api-token-jwtauth";
-        public static final String api_token_refresh = "http://www.177together.com/api-token-refresh/";
-        public static final String member = "http://www.177together.com/api/member/";
-        public static final String friendShip = "http://www.177together.com/api/friendship/";
+        public static final String api_token_jwtauth = "https://www.177together.com/api-token-jwtauth";
+        public static final String api_token_refresh = "https://www.177together.com/api-token-refresh/";
+        public static final String member = "https://www.177together.com/api/member/";
+        public static final String friendShip = "https://www.177together.com/api/friendship/";
     }
 
     //https://stackoverflow.com/questions/3806051/accessing-sharedpreferences-through-static-methods
@@ -390,12 +390,20 @@ public class MainActivity extends AppCompatActivity {
 
                             Message message = new Message();
                             message.what = MyMessages.Progressing;
-                            JSONObject jsonObj = HttpUtils.GetToken(Path.api_token_jwtauth, params);
-                            DealToken(jsonObj.getString("token"));  //儲存Token
                             Bundle bundle = new Bundle();
-                            bundle.putBundle("token_Bundle", JsonToBundle(jsonObj));    //轉成Bundle
-                            message.setData(bundle);
-                            loginHandler.sendMessage(message);
+                            JSONObject jsonObj = HttpUtils.GetToken(Path.api_token_jwtauth, params);
+                            if(jsonObj.getInt("responseCode")!=HttpURLConnection.HTTP_OK){
+                                message.what = MyMessages.Error;
+                                bundle.putString("errorMsg", jsonObj.getString("non_field_errors"));    //"non_field_errors"為jwt預設"key"名稱
+                                message.setData(bundle);
+                                loginHandler.sendMessage(message);
+
+                            }else{
+                                DealToken(jsonObj.getString("token"));  //儲存Token
+                                bundle.putBundle("token_Bundle", JsonToBundle(jsonObj));    //轉成Bundle
+                                message.setData(bundle);
+                                loginHandler.sendMessage(message);
+                            }
 
                             loginHandler.sendEmptyMessage(MyMessages.Disconnect);
                         } catch (Exception e) {
@@ -454,8 +462,8 @@ public class MainActivity extends AppCompatActivity {
                                     bundle.putBundle("member_Bundle", JsonToBundle(jsonObj));    //轉成Bundle
                                     message.setData(bundle);
                                     registerHandler.sendMessage(message);
-                                    registerHandler.sendEmptyMessage(MyMessages.Disconnect);
                                 }
+                                registerHandler.sendEmptyMessage(MyMessages.Disconnect);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
