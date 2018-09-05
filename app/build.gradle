@@ -17,7 +17,8 @@ android {
         }
     }
 
-    packagingOptions {      //add by jiancheng https://blog.csdn.net/caobin_study/article/details/79152163
+    packagingOptions {
+        //add by jiancheng https://blog.csdn.net/caobin_study/article/details/79152163
         exclude 'META-INF/*'//DEPENDENCIES
     }
 }

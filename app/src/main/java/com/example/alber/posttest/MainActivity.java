@@ -1,6 +1,7 @@
 package com.example.alber.posttest;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Handler;
@@ -35,13 +36,13 @@ import java.util.TimeZone;
 public class MainActivity extends AppCompatActivity {
 
 
-    private Button btnLogin, btnGet, btnClear, btnRegister, btnRefresh;
+    private Button btnLogin, btnOther, btnClear, btnRegister, btnRefresh;
     private TextView txvStatus, txvRecord, txvExpired, txvOrig_iat;
     private EditText txtEmail, txtPwd, txtPwdConfirm;
     private static String showMsg = "\n";
     private final LoginHandler loginHandler = new LoginHandler(MainActivity.this);
     private final RegisterHandler registerHandler = new RegisterHandler(MainActivity.this);
-    private final GetHandler getHandler = new GetHandler(MainActivity.this);
+
     private final RefreshHandler refreshHandler = new RefreshHandler(MainActivity.this);
 
     private class MyMessages {
@@ -51,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         public static final int Disconnect = 3;
     }
 
-    private class Path {  //注意路徑有無斜線(endpoint)
+    public class Path {  //注意路徑有無斜線(endpoint)
         public static final String api_token_jwtauth = "https://www.177together.com/api-token-jwtauth";
         public static final String api_token_refresh = "https://www.177together.com/api-token-refresh/";
         public static final String member = "https://www.177together.com/api/member/";
@@ -211,52 +212,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static class GetHandler extends Handler {
-        private final WeakReference<MainActivity> mActivity;    //弱引用
-
-        private GetHandler(MainActivity activity) {
-            mActivity = new WeakReference<MainActivity>(activity);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            MainActivity activity = mActivity.get();    //獲取弱引用的對象
-            if (activity != null) {
-                try {
-                    switch (msg.what) {
-                        case MyMessages.Connecting:
-                            showMsg = "\n[Connecting]>>>";
-                            break;
-                        case MyMessages.Progressing:
-                            showMsg = "[Progressing]>>>";
-                            Bundle bundle = msg.getData();
-                            JSONArray jsonArray = new JSONArray(bundle.getString("get_jsonArrayString"));
-                            JSONObject jsonObject = jsonArray.getJSONObject(jsonArray.length() - 1);    //最後一個為responseCode
-                            showMsg +=
-                                    "\n[ResponseCode]：" + String.valueOf(jsonObject.getInt("responseCode")) +
-                                            "\n" + jsonArray.toString();  //這邊直接輸出字串，未處理
-
-                            Toast.makeText(activity, "讀取成功！", Toast.LENGTH_SHORT).show();
-                            break;
-                        case MyMessages.Disconnect:
-                            showMsg = "\n[Disconnect]\n";
-                            break;
-                        case MyMessages.Error:
-                            bundle = msg.getData();
-                            String errorMsg = bundle.getString("errorMsg", "");
-                            Toast.makeText(activity, errorMsg, Toast.LENGTH_LONG).show();
-                            break;
-                        default:
-                            break;
-                    }
-                    activity.txvRecord.append(showMsg);
-                    //super.handleMessage(msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
     private static class RefreshHandler extends Handler {
         private final WeakReference<MainActivity> mActivity;    //弱引用
@@ -327,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
         btnClear = findViewById(R.id.btnClear);
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
-        btnGet = findViewById(R.id.btnGet);
+        btnOther = findViewById(R.id.btnOther);
         btnRefresh = findViewById(R.id.btnRefresh);
         txvStatus = findViewById(R.id.txvStatus);
         txvRecord = findViewById(R.id.txvRecord);
@@ -474,39 +429,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //取得特定資料
-        btnGet.setOnClickListener(new View.OnClickListener() {
+        //其他功能
+        btnOther.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            getHandler.sendEmptyMessage(MyMessages.Connecting);
-
-                            SharedPreferences myPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
-                            String token = myPref.getString("token", "");//讀取已儲存的Token
-                            Message message = new Message();
-                            Bundle bundle = new Bundle();
-                            if (token.equals("")) {
-                                message.what = MyMessages.Error;
-                                bundle.putString("errorMsg", "尚未登入，請先登入！");
-                                message.setData(bundle);
-                                getHandler.sendMessage(message);
-                            } else {
-                                message.what = MyMessages.Progressing;
-                                JSONArray jsonArray = HttpUtils.Get(Path.member, token);
-                                bundle.putString("get_jsonArrayString", jsonArray.toString());    //轉成String
-                                message.setData(bundle);
-                                getHandler.sendMessage(message);
-                            }
-
-                            getHandler.sendEmptyMessage(MyMessages.Disconnect);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
+                Intent it = new Intent(MainActivity.this,FriendshipActivity.class);
+                startActivity(it);
             }
         });
 
@@ -576,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {    //清除所有Handler動作
         loginHandler.removeCallbacksAndMessages(null);
         registerHandler.removeCallbacksAndMessages(null);
-        getHandler.removeCallbacksAndMessages(null);
+
         refreshHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
@@ -601,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
         return jsonObj;
     }
 
-    private static JSONObject StringToJSON(String jsonString) throws JSONException {
+    public static JSONObject StringToJSON(String jsonString) throws JSONException {
         return new JSONObject(jsonString);
     }
 
