@@ -36,7 +36,7 @@ import java.util.TimeZone;
 public class MainActivity extends AppCompatActivity {
 
 
-    private Button btnLogin, btnOther, btnClear, btnRegister, btnRefresh;
+    private Button btnLogin, btnOther, btnClear, btnRegister, btnRefresh, btnProfile;
     private TextView txvStatus, txvRecord, txvExpired, txvOrig_iat;
     private EditText txtEmail, txtPwd, txtPwdConfirm;
     private static String showMsg = "\n";
@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
                             activity.btnLogin.setEnabled(false); //已登入不允許再登入及註冊
                             activity.btnRegister.setEnabled(false);
+                            activity.btnProfile.setEnabled(true);
                             activity.txtEmail.setEnabled(false);
                             activity.txtPwd.setEnabled(false);
                             activity.txtPwdConfirm.setEnabled(false);
@@ -186,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
                             activity.txvOrig_iat.setText("Token Issued At：" + sdf.format(orig_iatDate));
                             activity.btnLogin.setEnabled(false); //已登入不允許再登入及註冊
                             activity.btnRegister.setEnabled(false);
+                            activity.btnProfile.setEnabled(true);
                             activity.txtEmail.setEnabled(false);
                             activity.txtPwd.setEnabled(false);
                             activity.txtPwdConfirm.setEnabled(false);
@@ -284,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         btnOther = findViewById(R.id.btnOther);
         btnRefresh = findViewById(R.id.btnRefresh);
+        btnProfile = findViewById(R.id.btnProfile);
         txvStatus = findViewById(R.id.txvStatus);
         txvRecord = findViewById(R.id.txvRecord);
         txvExpired = findViewById(R.id.txvExpired);
@@ -318,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
                     txvOrig_iat.setText("Token Issued At：" + sdf.format(orig_iatDate));
                     btnLogin.setEnabled(false); //已登入不允許再登入及註冊
                     btnRegister.setEnabled(false);
+                    btnProfile.setEnabled(true);
                     txtEmail.setEnabled(false);
                     txtPwd.setEnabled(false);
                     txtPwdConfirm.setEnabled(false);
@@ -493,9 +497,20 @@ public class MainActivity extends AppCompatActivity {
 
                 btnLogin.setEnabled(true);
                 btnRegister.setEnabled(true);
+                btnProfile.setEnabled(false);
+
                 txtEmail.setEnabled(true);
                 txtPwd.setEnabled(true);
                 txtPwdConfirm.setEnabled(true);
+            }
+        });
+
+        //會員資料
+        btnProfile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent it = new Intent(MainActivity.this,ProfileActivity.class);
+                startActivity(it);
             }
         });
     }

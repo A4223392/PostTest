@@ -12,14 +12,17 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
-/*import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONException;*/
+import org.json.JSONException;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -225,6 +228,33 @@ public class HttpUtils {
         return null;
     }
 
+    public static JSONObject Patch(String path, String token, Map<String, String> params) {
+        JSONObject resultObj = null;
+        try {
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpPatch httpPatch = new HttpPatch(path);
+            httpPatch.setHeader("Content-type", "application/json");
+            httpPatch.setHeader("Charset", HTTP.UTF_8);
+            httpPatch.setHeader("Accept", "application/json");
+            httpPatch.setHeader("Accept-Charset", HTTP.UTF_8);
+            httpPatch.setHeader("Authorization", "JWT " + token);  //注意空格
+            StringEntity entity = new StringEntity(MapToJSONString(params), HTTP.UTF_8);
+            httpPatch.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(httpPatch);
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode == HttpStatus.SC_NO_CONTENT) {   //204沒有回傳資料
+                resultObj = new JSONObject("{responseCode: 204}");
+            } else {
+                resultObj = new JSONObject(EntityUtils.toString(response.getEntity(), HTTP.UTF_8)); //注意編碼
+                resultObj.put("responseCode", String.valueOf(responseCode));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return resultObj;
+    }
+
     /**
      * 轉成JSON格式
      * https://dotblogs.com.tw/newmonkey48/2017/09/21/152425
@@ -257,16 +287,16 @@ public class HttpUtils {
         byte[] data = new byte[1024];
         int len;
         JSONObject jsonObj;
-        if (inputStream == null) {
-            try {
-                jsonObj = new JSONObject();
-                jsonObj.put("responseCode", responseCode);
-                return jsonObj;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            try {
+        try {
+            if (responseCode == 204) {    //204沒有資料不須讀取
+                try {
+                    jsonObj = new JSONObject();
+                    jsonObj.put("responseCode", responseCode);
+                    return jsonObj;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
                 while ((len = inputStream.read(data)) != -1) {
                     byteArrayOutputStream.write(data, 0, len);
                 }
@@ -279,9 +309,9 @@ public class HttpUtils {
                     jsonObj = null;
                 }
                 return jsonObj;
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
