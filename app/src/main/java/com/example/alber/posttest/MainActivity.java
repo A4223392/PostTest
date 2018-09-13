@@ -1,8 +1,11 @@
 package com.example.alber.posttest;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Message;
@@ -14,6 +17,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,7 +43,11 @@ public class MainActivity extends AppCompatActivity {
     private Button btnLogin, btnOther, btnClear, btnRegister, btnRefresh, btnProfile;
     private TextView txvStatus, txvRecord, txvExpired, txvOrig_iat;
     private EditText txtEmail, txtPwd, txtPwdConfirm;
+    private Spinner spnType;
     private static String showMsg = "\n";
+    private SQLiteDatabase db;
+    private final String DB_NAME = "MYLOCALDB";
+
     private final LoginHandler loginHandler = new LoginHandler(MainActivity.this);
     private final RegisterHandler registerHandler = new RegisterHandler(MainActivity.this);
 
@@ -294,6 +302,17 @@ public class MainActivity extends AppCompatActivity {
         txtEmail = findViewById(R.id.txtEmail);
         txtPwd = findViewById(R.id.txtPwd);
         txtPwdConfirm = findViewById(R.id.txtPwdConfirm);
+        spnType = findViewById(R.id.spnType);
+
+        //檢查資料庫是否存在
+        SharedPreferences dbStatusPref = getSharedPreferences("DBStatus", MODE_PRIVATE);
+        boolean isFirst = dbStatusPref.getBoolean("isFirst", true);//第一次找不到為true
+        if (isFirst) {
+            SetUpLocalDB();//建立SQLite資料庫及資料表
+            SharedPreferences.Editor editor = getPreferences(MODE_PRIVATE).edit();
+            editor.putBoolean("isFirst", false);
+            editor.apply();
+        }
 
         //自動登入
         SharedPreferences myPref = getSharedPreferences("jwt_token", MODE_PRIVATE);  //此處使用預設的非靜態方法
@@ -345,7 +364,7 @@ public class MainActivity extends AppCompatActivity {
                             //必填這三個欄位
                             params.put("username", txtEmail.getText().toString() + ";" + "2");  //xxx@xxx;2
                             params.put("password", txtPwd.getText().toString());    //MySQL392
-                            params.put("membertype_id", "2");
+                            params.put("membertype_id", spnType.getSelectedItem().toString());
 
                             Message message = new Message();
                             message.what = MyMessages.Progressing;
@@ -392,13 +411,13 @@ public class MainActivity extends AppCompatActivity {
                                 registerHandler.sendEmptyMessage(MyMessages.Connecting);
                                 Map<String, String> params = new HashMap<>();
                                 params.put("account", txtEmail.getText().toString());    //必填
-                                params.put("identifier", null);
-                                params.put("membertype", "2");  //必填
-                                params.put("name", null);
-                                params.put("nickname", null);
+                                params.put("identifier", "85948764153");
+                                params.put("membertype", spnType.getSelectedItem().toString());  //必填
+                                params.put("name", "江建呈");
+//                                params.put("nickname", null);
                                 params.put("password", txtPwd.getText().toString()); //必填
-                                params.put("localpicture", "images\\usr\\pic001.jpg");
-                                params.put("dbpicture", "images\\usr\\pic020.jpg");
+//                                params.put("localpicture", "images\\usr\\pic001.jpg");
+//                                params.put("dbpicture", "images\\usr\\pic020.jpg");
 
                                 Message message = new Message();
                                 message.what = MyMessages.Progressing;
@@ -412,9 +431,9 @@ public class MainActivity extends AppCompatActivity {
 
                                 } else {    //註冊成功
                                     params = new HashMap<>();
-                                    params.put("username", txtEmail.getText().toString() + ";" + "2");//帳號+會員類型 為唯一
+                                    params.put("username", txtEmail.getText().toString() + ";" + spnType.getSelectedItem().toString());//帳號+會員類型 為唯一
                                     params.put("password", txtPwd.getText().toString());
-                                    params.put("membertype_id", "2");   //本站會員
+                                    params.put("membertype_id", spnType.getSelectedItem().toString());
                                     JSONObject tokenJsonObj = HttpUtils.GetToken(Path.api_token_jwtauth, params);   //取得Token以利之後存取其他資源
                                     DealToken(tokenJsonObj.getString("token")); //儲存Token
                                     jsonObj.put("token", tokenJsonObj.getString("token"));   //加入註冊時回傳的json
@@ -563,5 +582,43 @@ public class MainActivity extends AppCompatActivity {
                 .putString("PAYLOAD", decodeArray[1])   //只需要PAYLOAD
                 .apply();   //apply()為非同步寫入
         //http://android-deve.blogspot.com/2012/11/sharedpreferences-keyvalue.html
+    }
+
+    private void SetUpLocalDB() {
+        // Android 使用 SQLite 資料庫的方法
+        // http://jim690701.blogspot.tw/2012/06/android-sqlite.html
+        // http://sweeteason.pixnet.net/blog/post/37364146-android-%E4%BD%BF%E7%94%A8-sqlite-%E8%B3%87%E6%96%99%E5%BA%AB%E7%9A%84%E6%96%B9%E6%B3%95
+
+        //取得資料庫
+        DBHelper DH = new DBHelper(this);
+        db = DH.getReadableDatabase();
+        //  db = openOrCreateDatabase(dbName, android.content.Context.MODE_PRIVATE, null);
+        /*String TB_NAME;
+        String[] col;
+        String[] data;
+        String cmd;
+        Cursor cur;
+
+
+        //新增sys_membertype資料
+        TB_NAME = "sys_membertype";
+        col = new String[]{"membertype_id", "name", "renew_time"};
+        data = new String[]{"1", "管理員", datetime.getTime().toString(),
+                "2", "本站帳號", datetime.getTime().toString(),
+                "3", "Facebook", datetime.getTime().toString(),
+                "4", "Google", datetime.getTime().toString()};
+        AddData(TB_NAME, col, data);*/
+    }
+
+    public void AddData(String tableName, String[] columnName, String[] data) {
+        //db = openOrCreateDatabase(DB_NAME, android.content.Context.MODE_PRIVATE, null);
+        ContentValues cv ;
+        for (int i = 0; i < data.length; ) {
+            cv = new ContentValues(columnName.length);
+            for (int j = 0; j < columnName.length; j++) {
+                cv.put(columnName[j], data[i++]);
+            }
+            db.insert(tableName, null, cv);
+        }
     }
 }

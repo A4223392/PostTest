@@ -1,6 +1,7 @@
 package com.example.alber.posttest;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
@@ -21,7 +22,7 @@ import java.util.Map;
 public class ProfileActivity extends AppCompatActivity {
 
     private Button btnReturn2, btnUpdate;
-    private EditText txtAccount, txtToid, txtName;
+    private EditText txtAccount, txtToid, txtName, txtNewPwd, txtNewPwdConfirm;
     private static String account, toid, name;
 
     private final ProfileUpdateHandler profileUpdateHandler = new ProfileUpdateHandler(ProfileActivity.this);
@@ -50,7 +51,7 @@ public class ProfileActivity extends AppCompatActivity {
             if (activity != null) {
                 try {
                     switch (msg.what) {
-                        case ProfileActivity.MyMessages.Progressing:
+                        case MyMessages.Progressing:
                             Bundle bundle = msg.getData();
                             JSONObject jsonObject = new JSONObject(bundle.getString("patch_jsonString"));
                             int responseCode = jsonObject.getInt("responseCode");
@@ -74,6 +75,18 @@ public class ProfileActivity extends AppCompatActivity {
 
                             Toast.makeText(activity, strMsg, Toast.LENGTH_LONG).show();
                             break;
+                        case MyMessages.Disconnect:
+                            String strNewPwd = activity.txtNewPwd.getText().toString();
+                            String strNewPwdConfirm = activity.txtNewPwdConfirm.getText().toString();
+                            Boolean isPwdConfirm = strNewPwd.equals(strNewPwdConfirm);
+                            //密碼有變更就自動登出
+                            if(isPwdConfirm&&!strNewPwd.isEmpty()) {
+                                SharedPreferences.Editor editor = myGetSharedPreferences(activity.getApplicationContext()).edit();
+                                editor.clear(); //清除Token
+                                editor.apply();
+                                Toast.makeText(activity, "變更成功，請重新登入！", Toast.LENGTH_LONG).show();
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -85,7 +98,6 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,6 +107,8 @@ public class ProfileActivity extends AppCompatActivity {
         txtAccount = findViewById(R.id.txtAccount);
         txtToid = findViewById(R.id.txtToid);
         txtName = findViewById(R.id.txtName);
+        txtNewPwd = findViewById(R.id.txtNewPwd);
+        txtNewPwdConfirm = findViewById(R.id.txtNewPwdConfirm);
 
         try {
             //帶入資料
@@ -128,11 +142,15 @@ public class ProfileActivity extends AppCompatActivity {
                 //先檢查有無修改
                 final String strToid = txtToid.getText().toString().toUpperCase();
                 final String strName = txtName.getText().toString();
+                final String strNewPwd = txtNewPwd.getText().toString();
+                final String strNewPwdConfirm = txtNewPwdConfirm.getText().toString();
+                final Boolean isPwdConfirm = strNewPwd.equals(strNewPwdConfirm);
 
-                if(strToid.equals(toid)&&strName.equals(name)) { //未修改
-                    Toast.makeText(getBaseContext(), "資料未變更，未更新", Toast.LENGTH_LONG).show();
-                }
-                else {
+                if(strToid.equals(toid)&&strName.equals(name)&&strNewPwd.isEmpty()&&strNewPwdConfirm.isEmpty()) { //未修改
+                    Toast.makeText(getBaseContext(), "資料未變更，不須更新", Toast.LENGTH_LONG).show();
+                }else if(!isPwdConfirm){
+                    Toast.makeText(getBaseContext(), "兩次密碼不一致，請重新輸入！", Toast.LENGTH_LONG).show();
+                }else {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -144,6 +162,8 @@ public class ProfileActivity extends AppCompatActivity {
                                 Map<String, String> params = new HashMap<>();
                                 params.put("toid", strToid);
                                 params.put("name", strName);
+                                if(isPwdConfirm&&!strNewPwd.isEmpty())
+                                    params.put("password",strNewPwd);
                                 Message message = new Message();
                                 Bundle bundle = new Bundle();
 
@@ -153,6 +173,13 @@ public class ProfileActivity extends AppCompatActivity {
                                 bundle.putString("patch_jsonString", jsonObject.toString());    //轉成String
                                 message.setData(bundle);
                                 profileUpdateHandler.sendMessage(message);
+
+                                profileUpdateHandler.sendEmptyMessage(MyMessages.Disconnect);
+
+                                //跳轉至首頁
+                                Intent it = new Intent(ProfileActivity.this, MainActivity.class);
+                                startActivity(it);
+
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -165,8 +192,8 @@ public class ProfileActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {    //清除所有Handler動作
+        profileUpdateHandler.removeCallbacksAndMessages(null);
 
-//        refreshHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
 }
