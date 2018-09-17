@@ -40,6 +40,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 "member_id INTEGER(4)," +
                 "friend_id INTEGER(4)," +
                 "nickname VARCHAR(20)," +
+                "syncstatus INTEGER(4) DEFAULT 1," +
                 "renew_time TIMESTAMP(4),"+
                 "PRIMARY KEY(member_id,friend_id)," +
                 "FOREIGN KEY(member_id) REFERENCES mbr_member(id)," +

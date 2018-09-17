@@ -244,6 +244,33 @@ public class HttpUtils {
         return resultObj;
     }
 
+    public static JSONObject Patch(String path, String token, String jsonStrData) {
+        JSONObject resultObj = null;
+        try {
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpPatch httpPatch = new HttpPatch(path);
+            httpPatch.setHeader("Content-type", "application/json");
+            httpPatch.setHeader("Charset", HTTP.UTF_8);
+            httpPatch.setHeader("Accept", "application/json");
+            httpPatch.setHeader("Accept-Charset", HTTP.UTF_8);
+            httpPatch.setHeader("Authorization", "JWT " + token);  //注意空格
+            StringEntity entity = new StringEntity(jsonStrData, HTTP.UTF_8);
+            httpPatch.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(httpPatch);
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode == HttpStatus.SC_NO_CONTENT) {   //204沒有回傳資料
+                resultObj = new JSONObject("{responseCode: 204}");
+            } else {
+                resultObj = new JSONObject(EntityUtils.toString(response.getEntity(), HTTP.UTF_8)); //注意編碼
+                resultObj.put("responseCode", String.valueOf(responseCode));    //加入回應碼
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return resultObj;
+    }
+
     public static JSONObject Post(String path, String token, Map<String, String> params) {
         JSONObject resultObj = null;
         try {

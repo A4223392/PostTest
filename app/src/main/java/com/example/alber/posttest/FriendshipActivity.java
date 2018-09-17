@@ -1,9 +1,11 @@
 package com.example.alber.posttest;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AlertDialog;
@@ -13,9 +15,11 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -26,10 +30,11 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+
 public class FriendshipActivity extends AppCompatActivity
     implements DialogInterface.OnClickListener {
 
-    private Button btnReturn, btnGet, btnFriendList, btnSearchFriend, btnAddFriend;
+    private Button btnReturn, btnGet, btnFriendList, btnSearchFriend, btnAddFriend, btnSyncFriendList;
     private static String showMsg = "\n";
     private TextView txvRecord, txvFriendName;
     private EditText txtToid;
@@ -281,6 +286,7 @@ public class FriendshipActivity extends AppCompatActivity
         btnFriendList = findViewById(R.id.btnFriendList);
         btnSearchFriend = findViewById(R.id.btnSearchFriend);
         btnAddFriend = findViewById(R.id.btnAddFriend);
+        btnSyncFriendList = findViewById(R.id.btnSyncFriendList);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);   //進入含有EditText的Activity時，不自動彈出虛擬鍵盤
 
         //返回
@@ -443,6 +449,14 @@ public class FriendshipActivity extends AppCompatActivity
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+        });
+
+        //同步好友列表
+        btnSyncFriendList.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new SyncFriendList().execute();
             }
         });
     }
@@ -632,5 +646,115 @@ public class FriendshipActivity extends AppCompatActivity
         });
 
         thread.start();
+    }
+
+    public class SyncFriendList extends AsyncTask<Void,Integer,Void>{
+        //http://aiur3908.blogspot.com/2015/06/android-asynctask.html
+        //https://blog.csdn.net/carson_ho/article/details/79314325
+        private ProgressDialog progressDialog; //進度條元件
+        private JSONArray jsonArray = new JSONArray();
+
+        @Override
+        protected void onPreExecute() {
+            //執行前 設定可以在這邊設定
+          try {
+                //讀取本機資料
+                DH = new DBHelper(FriendshipActivity.this);
+                db = DH.getReadableDatabase();
+
+                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname,renew_time FROM mbr_friendship WHERE syncstatus=0", null);
+                int rowsCount = cursor.getCount();
+                if (rowsCount != 0) {
+                    cursor.moveToFirst();
+                    for (int i = 0; i < rowsCount; i++) {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put("id", cursor.getString(0));
+                        jsonObject.put("member_id", cursor.getString(1));
+                        jsonObject.put("friend_id", cursor.getString(2));
+                        jsonObject.put("nickname", cursor.getString(3));
+                        jsonObject.put("renew_time", cursor.getString(4));
+                        jsonArray.put(jsonObject);
+                        cursor.moveToNext();
+                    }
+                }
+                db.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            //初始化進度條並設定樣式及顯示的資訊。
+            progressDialog = new ProgressDialog(FriendshipActivity.this);
+            progressDialog.setTitle("同步中");
+            progressDialog.setCancelable(false);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+//            progressDialog.setMax(jsonArray.length());    //有幾筆
+            progressDialog.setMax(100);    //有幾筆
+
+            super.onPreExecute();
+
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            //執行中 在背景做事情
+            try {/*
+                SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
+                String token = tokenPref.getString("token", "");//讀取已儲存的Token
+
+                JSONObject returnJsonObj ;
+                int progressValue = 0;
+                for (int i = 0; i < jsonArray.length() ; ) {
+                    returnJsonObj = HttpUtils.Patch(MainActivity.Path.friendShip, token, jsonArray.getJSONObject(i).toString());
+                    if(returnJsonObj.getInt("responseCode")== HttpURLConnection.HTTP_NO_CONTENT){   //成功
+                        publishProgress(progressValue+=1);  //完成一筆就加一
+                        i++;
+                        Thread.sleep(3000L);    //減速
+                    }else{  //失敗
+                                progressDialog.setMessage("狀態異常，重新嘗試中");
+Thread.sleep(3000L);
+                        i--;
+                    }
+
+                }*/
+                for(int i=0,j=0;i<=100;i++){
+                    Thread.sleep(250L);
+                    if(40<++j&&++j<70)
+                        publishProgress(-1);
+                    else
+                        publishProgress(++j);
+
+
+                }
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            //執行中 可以在這邊告知使用者進度
+
+            //取得更新的進度
+            if(values[0]==-1){
+                progressDialog.setMessage("狀態異常，重新嘗試中...");
+
+            }
+            else
+                progressDialog.setProgress(values[0]);
+            progressDialog.show();
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            //執行後 完成背景任務
+
+            //當完成的時候，把進度條消失
+            progressDialog.dismiss();
+            Toast.makeText(FriendshipActivity.this, "同步完成", Toast.LENGTH_LONG).show();
+            super.onPostExecute(aVoid);
+        }
     }
 }
