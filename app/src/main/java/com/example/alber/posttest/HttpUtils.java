@@ -2,6 +2,10 @@ package com.example.alber.posttest;
 
 //import android.util.Log;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -361,6 +365,20 @@ public class HttpUtils {
         }
         return jsonArray;
 
+    }
+
+    /**
+     * 檢查網路是否連接
+     * @param context 使用getApplicationContext()得到Context傳入
+     * @return 是否連接網路
+     * */
+    public static boolean IsInternetAvailable(Context context) {
+        ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected())
+            return true;
+        else
+            return false;
     }
     
     /*  

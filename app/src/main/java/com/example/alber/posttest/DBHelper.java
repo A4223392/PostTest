@@ -36,7 +36,8 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_mbr_member);
 
         final String CREATE_TABLE_mbr_friendship = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME_FRIENDSHIP +
-                "(member_id INTEGER(4)," +
+                "(id INTERGER(4)," +    //注意不須設為主鍵
+                "member_id INTEGER(4)," +
                 "friend_id INTEGER(4)," +
                 "nickname VARCHAR(20)," +
                 "renew_time TIMESTAMP(4),"+

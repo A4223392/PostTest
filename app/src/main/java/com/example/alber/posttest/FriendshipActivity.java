@@ -20,6 +20,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
+import java.net.HttpURLConnection;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -40,7 +41,7 @@ public class FriendshipActivity extends AppCompatActivity
 
 
     private final GetHandler getHandler = new GetHandler(FriendshipActivity.this);
-    private final FriendListHandler friendListHandler = new FriendListHandler(FriendshipActivity.this);
+//    private final FriendListHandler friendListHandler = new FriendListHandler(FriendshipActivity.this);
     private final SearchFriendHandler searchFriendHandler = new SearchFriendHandler(FriendshipActivity.this);
     private final AddFriendHandler addFriendHandler = new AddFriendHandler(FriendshipActivity.this);
 
@@ -49,6 +50,7 @@ public class FriendshipActivity extends AppCompatActivity
         public static final int Connecting = 1;
         public static final int Progressing = 2;
         public static final int Disconnect = 3;
+        public static final int Other = 4;
     }
 
     private static class GetHandler extends Handler {
@@ -98,6 +100,7 @@ public class FriendshipActivity extends AppCompatActivity
         }
     }
 
+    /*
     private static class FriendListHandler extends Handler {
         private final WeakReference<FriendshipActivity> mActivity;    //弱引用
 
@@ -155,7 +158,7 @@ public class FriendshipActivity extends AppCompatActivity
                 }
             }
         }
-    }
+    }*/
 
     private static class SearchFriendHandler extends Handler {
         private final WeakReference<FriendshipActivity> mActivity;    //弱引用
@@ -230,35 +233,34 @@ public class FriendshipActivity extends AppCompatActivity
             if (activity != null) {
                 try {
                     switch (msg.what) {
-                        case FriendshipActivity.MyMessages.Connecting:
+                        case MyMessages.Connecting:
                             showMsg = "\n[Connecting]>>>";
                             break;
-                        case FriendshipActivity.MyMessages.Progressing:
+                        case MyMessages.Progressing:
                             Bundle bundle = msg.getData();
-                            JSONObject jsonObject = new JSONObject(bundle.getString("patch_jsonString"));
-                            int responseCode = jsonObject.getInt("responseCode");
-                            String strMsg;
-                            if (responseCode == 204) {
-                                strMsg = "更新成功！\n" + jsonObject.toString();
-
-
-                            } else {
-                                strMsg = "更新失敗！\n" + jsonObject.toString();
-                            }
-
-                            Toast.makeText(activity, strMsg, Toast.LENGTH_LONG).show();
+                            showMsg = bundle.getString("post_msg");
+                            Toast.makeText(activity, showMsg, Toast.LENGTH_LONG).show();
                             break;
-                        case FriendshipActivity.MyMessages.Disconnect:
+                        case MyMessages.Disconnect:
                             showMsg = "\n[Disconnect]\n";
                             break;
-                        case FriendshipActivity.MyMessages.Error:
+                        case MyMessages.Error:
                             bundle = msg.getData();
-                            String errorMsg = bundle.getString("errorMsg", "");
-                            Toast.makeText(activity, errorMsg, Toast.LENGTH_LONG).show();
+                            showMsg = bundle.getString("error_msg");
+                            Toast.makeText(activity, showMsg, Toast.LENGTH_LONG).show();
+                            break;
+                        case MyMessages.Other:
+                            showMsg = "已和對方互為好友！";
+                            Toast.makeText(activity, showMsg, Toast.LENGTH_LONG).show();
+
+                            //跳轉畫面
+                            //.....
+
                             break;
                         default:
                             break;
                     }
+                    activity.txvRecord.append(showMsg);
                     //super.handleMessage(msg);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -328,7 +330,7 @@ public class FriendshipActivity extends AppCompatActivity
         //好友列表
         btnFriendList.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {/*
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -357,11 +359,31 @@ public class FriendshipActivity extends AppCompatActivity
                             }
 
                             friendListHandler.sendEmptyMessage(FriendshipActivity.MyMessages.Disconnect);
+
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
-                }).start();
+                }).start();*/
+                DH = new DBHelper(FriendshipActivity.this);
+                db = DH.getReadableDatabase();
+                String msg = "";
+                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname FROM mbr_friendship", null);
+                int rowsCount = cursor.getCount();
+                if (rowsCount != 0) {
+                    cursor.moveToFirst();
+                    for (int i = 0; i < rowsCount; i++) {
+                        msg += cursor.getString(0) + " ";
+                        msg += cursor.getString(1) + " ";
+                        msg += cursor.getString(2) + " ";
+                        msg += cursor.getString(3) + " ";
+                        msg += "\n";
+
+                        cursor.moveToNext();
+                    }
+                }
+                txvRecord.append("\n好友列表(本機)：\n" + msg);
+                db.close();
             }
         });
 
@@ -436,82 +458,126 @@ public class FriendshipActivity extends AppCompatActivity
                     SharedPreferences myPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
                     String strPayload = myPref.getString("PAYLOAD", "");
                     JSONObject jsonPayload = MainActivity.StringToJSON(strPayload);  //轉成JSON
-                    final String user_id = String.valueOf(jsonPayload.getInt("user_id"));
-                    //好友id
-                    final String friend_id = jsonObjectSearchFriend.getString("id");
+                    final String myId = String.valueOf(jsonPayload.getInt("user_id"));  //自己的id
+                    final String myName = jsonPayload.getString("name");    //自己的name
 
+                    final String friendId = jsonObjectSearchFriend.getString("id");    //好友id
+                    final String friendName = jsonObjectSearchFriend.getString("name"); //好友name
+                    if (HttpUtils.IsInternetAvailable(getApplicationContext())) { //檢查網路是否連接
+                        //寫入資料庫
+                        //寫入本機會員資料表
+                        String sqlCmd = String.format(//注意空格
+                                "INSERT INTO mbr_member (id, name, localpicture, dbpicture) " +
+                                        "SELECT * FROM (SELECT %s, \'%s\', \'%s\', \'%s\') " +
+                                        "WHERE NOT EXISTS (SELECT * FROM mbr_member WHERE id=%s)",
+                                friendId,
+                                jsonObjectSearchFriend.getString("name"),
+                                jsonObjectSearchFriend.getString("localpicture"),
+                                jsonObjectSearchFriend.getString("dbpicture"),
+                                friendId);
+                        db.execSQL(sqlCmd);//不存在才新增
 
-                    //寫入資料庫
+                        //寫入MySQL好友表
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    DH = new DBHelper(FriendshipActivity.this);
+                                    db = DH.getReadableDatabase();
 
-                    //寫入本機會員資料表
-                    String sqlCmd = String.format(//注意空格
-                            "INSERT INTO mbr_member (id, name, localpicture, dbpicture) " +
-                                    "VALUES (%s, \"%s\", \"%s\", \"%s\")",
-                            friend_id,
-                            jsonObjectSearchFriend.getString("name"),
-                            jsonObjectSearchFriend.getString("localpicture"),
-                            jsonObjectSearchFriend.getString("dbpicture"));
-                    db.execSQL(sqlCmd);
+                                    addFriendHandler.sendEmptyMessage(MyMessages.Connecting);
+                                    Message message = new Message();
+                                    Bundle bundle = new Bundle();
+                                    String msg = "";
 
-                    //寫入MySQL好友表
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            addFriendHandler.sendEmptyMessage(MyMessages.Connecting);
-                            Message message = new Message();
-                            Bundle bundle = new Bundle();
-                            
-                            message.what = FriendshipActivity.MyMessages.Progressing;
-                            SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
-                            String token = tokenPref.getString("token", "");//讀取已儲存的Token
-                            Map<String, String> params = new HashMap<>();
-                            params.put("member_id", user_id);
-                            params.put("friend_id", friend_id);
-                            params.put("nickname",null);
+                                    message.what = MyMessages.Progressing;
+                                    SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
+                                    String token = tokenPref.getString("token", "");//讀取已儲存的Token
+                                    Map<String, String> params = new HashMap<>();
+                                    params.put("member_id", myId);  //自己
+                                    params.put("friend_id", friendId);  //對方
+                                    params.put("nickname", friendName);
 
-                            JSONObject jsonObject = HttpUtils.Post(MainActivity.Path.friendShip,token,params);
-                            bundle.putString("post_jsonString", jsonObject.toString());    //轉成String
-                            message.setData(bundle);
-                            addFriendHandler.sendMessage(message);
+                                    JSONObject jsonObject1 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
 
-                            addFriendHandler.sendEmptyMessage(MyMessages.Disconnect);
-                        }
-                    }).start();
+                                    if(jsonObject1.getInt("responseCode") != HttpURLConnection.HTTP_CREATED) {
+                                        if(jsonObject1.getString("error_msg").equals("好友關係已存在！")){
+                                            addFriendHandler.sendEmptyMessage(MyMessages.Other);
+                                        }else{
+                                            message.what = MyMessages.Error;
+                                            msg = "加入失敗" + jsonObject1.getString("error_msg");
+                                            bundle.putString("error_msg", msg);
+                                            message.setData(bundle);
+                                            addFriendHandler.sendMessage(message);
+                                        }
 
-                    //寫入本機好友表
-                    sqlCmd = String.format(//注意空格
-                            "INSERT INTO mbr_friendship (member_id, friend_id, nickname, renew_time) VALUES " +
-                                    "(%s, \"%s\", \"%s\", \"%s\")," +
-                                    "(%s, \"%s\", \"%s\", \"%s\")",
-                            user_id,    //自己
-                            friend_id, //對方
-                            null,
-                            datetime.getTime().toString(),
+                                    }else {
+                                        params = new HashMap<>();
+                                        params.put("member_id", friendId);  //對方
+                                        params.put("friend_id", myId);  //自己
+                                        params.put("nickname", myName);
 
-                            friend_id, //對方
-                            user_id,    //自己
-                            null,
-                            datetime.getTime().toString());
-                    db.execSQL(sqlCmd);
+                                        JSONObject jsonObject2 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
 
-                    //讀取
-                    cursor = db.rawQuery("SELECT member_id,friend_id,nickname FROM mbr_friendship", null);
-                    String msg = "";
-                    int rowsCount = cursor.getCount();
-                    if (rowsCount != 0) {
-                        cursor.moveToFirst();
-                        for (int i = 0; i < rowsCount; i++) {
-                            msg += cursor.getString(0) + " ";
-                            msg += cursor.getString(1) + " ";
-                            msg += cursor.getString(2) + " ";
-                            msg += "\n";
+                                        if(jsonObject2.getInt("responseCode") != HttpURLConnection.HTTP_CREATED) {
+                                            message.what = MyMessages.Error;
+                                            msg = "加入失敗" + jsonObject1.getString("error_msg");
+                                            bundle.putString("error_msg", msg);
+                                            message.setData(bundle);
+                                            addFriendHandler.sendMessage(message);
+                                        }else {
+                                            //寫入本機好友表
+                                            String sqlCmd = String.format(//注意空格
+                                                    "INSERT INTO mbr_friendship (id, member_id, friend_id, nickname, renew_time) VALUES " +
+                                                            "(%d, %s, %s, \'%s\', \'%s\')," +
+                                                            "(%d, %s, %s, \'%s\', \'%s\')",
+                                                    jsonObject1.getInt("id"),
+                                                    jsonObject1.getInt("member_id"),    //自己
+                                                    jsonObject1.getInt("friend_id"), //對方
+                                                    friendName,   //friendName
+                                                    datetime.getTime().toString(),
 
-                            cursor.moveToNext();
-                        }
+                                                    jsonObject2.getInt("id"),
+                                                    jsonObject2.getInt("member_id"),    //對方
+                                                    jsonObject2.getInt("friend_id"), //自己
+                                                    myName,   //myName
+                                                    datetime.getTime().toString());
+                                            db.execSQL(sqlCmd);
+                                            msg = "加入成功！\n";
+                                        }
+                                        bundle.putString("post_msg", msg);
+                                        message.setData(bundle);
+                                        addFriendHandler.sendMessage(message);
+
+                                        //讀取
+                                        cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname FROM mbr_friendship", null);
+                                        int rowsCount = cursor.getCount();
+                                        if (rowsCount != 0) {
+                                            cursor.moveToFirst();
+                                            for (int i = 0; i < rowsCount; i++) {
+                                                msg += cursor.getString(0) + " ";
+                                                msg += cursor.getString(1) + " ";
+                                                msg += cursor.getString(2) + " ";
+                                                msg += cursor.getString(3) + " ";
+                                                msg += "\n";
+
+                                                cursor.moveToNext();
+                                            }
+                                        }
+                                        txvRecord.append("\n好友列表(本機)：\n" + msg);
+                                        db.close();
+                                    }
+
+                                    addFriendHandler.sendEmptyMessage(MyMessages.Disconnect);
+                                }catch (Exception e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        }).start();
+
+                    } else {
+                        Toast.makeText(FriendshipActivity.this, "網路未連接，請重試！", Toast.LENGTH_LONG).show();
                     }
-                    txvRecord.append("\n好友列表(本機)：\n" + msg);
-                    db.close();
-                    Toast.makeText(FriendshipActivity.this, "加入成功", Toast.LENGTH_LONG).show();
 
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:
@@ -530,5 +596,41 @@ public class FriendshipActivity extends AppCompatActivity
     protected void onDestroy() {
         getHandler.removeCallbacksAndMessages(null);    //清除Handler動作
         super.onDestroy();
+    }
+
+    private void startPostThread(final String myId, final String myName, final String friendId, final String friendName) {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                addFriendHandler.sendEmptyMessage(MyMessages.Connecting);
+                Message message = new Message();
+                Bundle bundle = new Bundle();
+
+                message.what = FriendshipActivity.MyMessages.Progressing;
+                SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
+                String token = tokenPref.getString("token", "");//讀取已儲存的Token
+                Map<String, String> params = new HashMap<>();
+                params.put("member_id", myId);  //自己
+                params.put("friend_id", friendId);  //對方
+                params.put("nickname", friendName);
+
+                JSONObject jsonObject1 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
+
+                params = new HashMap<>();
+                params.put("member_id", friendId);  //對方
+                params.put("friend_id", myId);  //自己
+                params.put("nickname", myName);
+
+                JSONObject jsonObject2 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
+
+                bundle.putString("post_jsonString", jsonObject1.toString());    //轉成String
+                message.setData(bundle);
+                addFriendHandler.sendMessage(message);
+
+                addFriendHandler.sendEmptyMessage(MyMessages.Disconnect);
+            }
+        });
+
+        thread.start();
     }
 }

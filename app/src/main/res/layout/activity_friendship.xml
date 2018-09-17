@@ -34,7 +34,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="GET 取得好友列表\n(自己的)"
+        android:text="好友列表\n(本機)"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btnGet"
         app:layout_constraintTop_toTopOf="parent" />
