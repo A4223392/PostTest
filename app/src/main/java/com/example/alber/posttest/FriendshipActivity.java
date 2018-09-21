@@ -25,10 +25,13 @@ import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 
 public class FriendshipActivity extends AppCompatActivity
@@ -43,7 +46,6 @@ public class FriendshipActivity extends AppCompatActivity
     Cursor cursor;
     private JSONObject jsonObjectSearchFriend = null;
     private Calendar datetime = Calendar.getInstance(Locale.TAIWAN);
-
 
     private final GetHandler getHandler = new GetHandler(FriendshipActivity.this);
 //    private final FriendListHandler friendListHandler = new FriendListHandler(FriendshipActivity.this);
@@ -542,6 +544,8 @@ public class FriendshipActivity extends AppCompatActivity
                                             message.setData(bundle);
                                             addFriendHandler.sendMessage(message);
                                         }else {
+                                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+                                            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
                                             //寫入本機好友表
                                             String sqlCmd = String.format(//注意空格
                                                     "INSERT INTO mbr_friendship (id, member_id, friend_id, nickname, renew_time) VALUES " +
@@ -551,14 +555,17 @@ public class FriendshipActivity extends AppCompatActivity
                                                     jsonObject1.getInt("member_id"),    //自己
                                                     jsonObject1.getInt("friend_id"), //對方
                                                     friendName,   //friendName
-                                                    datetime.getTime().toString(),
+//                                                    datetime.getTime().toString(),
+                                                    sdf.format(datetime.getTime().toString()),
 
                                                     jsonObject2.getInt("id"),
                                                     jsonObject2.getInt("member_id"),    //對方
                                                     jsonObject2.getInt("friend_id"), //自己
                                                     myName,   //myName
-                                                    datetime.getTime().toString());
-                                            db.execSQL(sqlCmd);
+//                                                    datetime.getTime().toString(),
+                                                    sdf.format(datetime.getTime().toString()));
+
+                                                    db.execSQL(sqlCmd);
                                             msg = "加入成功！\n";
                                         }
                                         bundle.putString("post_msg", msg);
@@ -674,7 +681,7 @@ public class FriendshipActivity extends AppCompatActivity
                         jsonObject.put("member_id", cursor.getString(1));
                         jsonObject.put("friend_id", cursor.getString(2));
                         jsonObject.put("nickname", cursor.getString(3));
-                        jsonObject.put("renew_time", cursor.getString(4));
+                        jsonObject.put("renew_time", cursor.getString(4));    //傳該筆紀錄的更新時間上去比對
                         jsonArray.put(jsonObject);
                         cursor.moveToNext();
                     }
@@ -692,11 +699,11 @@ public class FriendshipActivity extends AppCompatActivity
             progressDialog.setMax(100);    //有幾筆
 
             super.onPreExecute();
-
         }
 
         @Override
         protected Boolean doInBackground(Void... voids) {
+
             //執行中 在背景做事情
             try {
                 SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
@@ -705,7 +712,8 @@ public class FriendshipActivity extends AppCompatActivity
                 JSONObject returnJsonObj ;
                 int progressValue = 0;
                 for (int i = 0; i < jsonArray.length() ; ) {
-                    returnJsonObj = HttpUtils.Patch(MainActivity.Path.friendShip, token, jsonArray.getJSONObject(i).toString());
+                    String path = MainActivity.Path.friendShip + jsonArray.getJSONObject(i).getString("id") + "/";
+                    returnJsonObj = HttpUtils.Patch(path, token, jsonArray.getJSONObject(i).toString());
                     if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功
                         publishProgress(progressValue += 1);  //完成一筆就加一
                         i++;
