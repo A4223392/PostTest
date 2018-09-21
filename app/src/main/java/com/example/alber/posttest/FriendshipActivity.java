@@ -375,6 +375,7 @@ public class FriendshipActivity extends AppCompatActivity
                 db = DH.getReadableDatabase();
                 String msg = "";
                 cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname FROM mbr_friendship", null);
+
                 int rowsCount = cursor.getCount();
                 if (rowsCount != 0) {
                     cursor.moveToFirst();
@@ -383,6 +384,7 @@ public class FriendshipActivity extends AppCompatActivity
                         msg += cursor.getString(1) + " ";
                         msg += cursor.getString(2) + " ";
                         msg += cursor.getString(3) + " ";
+
                         msg += "\n";
 
                         cursor.moveToNext();
@@ -563,7 +565,7 @@ public class FriendshipActivity extends AppCompatActivity
                                         message.setData(bundle);
                                         addFriendHandler.sendMessage(message);
 
-                                        //讀取
+                                        /*//讀取
                                         cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname FROM mbr_friendship", null);
                                         int rowsCount = cursor.getCount();
                                         if (rowsCount != 0) {
@@ -578,7 +580,7 @@ public class FriendshipActivity extends AppCompatActivity
                                                 cursor.moveToNext();
                                             }
                                         }
-                                        txvRecord.append("\n好友列表(本機)：\n" + msg);
+                                        txvRecord.append("\n好友列表(本機)：\n" + msg);*/
                                         db.close();
                                     }
 
@@ -648,7 +650,7 @@ public class FriendshipActivity extends AppCompatActivity
         thread.start();
     }
 
-    public class SyncFriendList extends AsyncTask<Void,Integer,Void>{
+    public class SyncFriendList extends AsyncTask<Void,Integer,Boolean>{
         //http://aiur3908.blogspot.com/2015/06/android-asynctask.html
         //https://blog.csdn.net/carson_ho/article/details/79314325
         private ProgressDialog progressDialog; //進度條元件
@@ -662,7 +664,7 @@ public class FriendshipActivity extends AppCompatActivity
                 DH = new DBHelper(FriendshipActivity.this);
                 db = DH.getReadableDatabase();
 
-                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname,renew_time FROM mbr_friendship WHERE syncstatus=0", null);
+                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname,renew_time FROM mbr_friendship WHERE syncstatus=1", null);
                 int rowsCount = cursor.getCount();
                 if (rowsCount != 0) {
                     cursor.moveToFirst();
@@ -686,7 +688,7 @@ public class FriendshipActivity extends AppCompatActivity
             progressDialog.setTitle("同步中");
             progressDialog.setCancelable(false);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-//            progressDialog.setMax(jsonArray.length());    //有幾筆
+            progressDialog.setMax(jsonArray.length());    //有幾筆
             progressDialog.setMax(100);    //有幾筆
 
             super.onPreExecute();
@@ -694,9 +696,9 @@ public class FriendshipActivity extends AppCompatActivity
         }
 
         @Override
-        protected Void doInBackground(Void... voids) {
+        protected Boolean doInBackground(Void... voids) {
             //執行中 在背景做事情
-            try {/*
+            try {
                 SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
                 String token = tokenPref.getString("token", "");//讀取已儲存的Token
 
@@ -704,57 +706,51 @@ public class FriendshipActivity extends AppCompatActivity
                 int progressValue = 0;
                 for (int i = 0; i < jsonArray.length() ; ) {
                     returnJsonObj = HttpUtils.Patch(MainActivity.Path.friendShip, token, jsonArray.getJSONObject(i).toString());
-                    if(returnJsonObj.getInt("responseCode")== HttpURLConnection.HTTP_NO_CONTENT){   //成功
-                        publishProgress(progressValue+=1);  //完成一筆就加一
+                    if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功
+                        publishProgress(progressValue += 1);  //完成一筆就加一
                         i++;
                         Thread.sleep(3000L);    //減速
-                    }else{  //失敗
-                                progressDialog.setMessage("狀態異常，重新嘗試中");
-Thread.sleep(3000L);
-                        i--;
+                    } else {  //失敗
+//                        progressDialog.setMessage("狀態異常，重新嘗試中");
+//                        Thread.sleep(3000L);
+//                        i--;
+//                        publishProgress(-1);
+                        return false;
                     }
-
-                }*/
-                for(int i=0,j=0;i<=100;i++){
-                    Thread.sleep(250L);
-                    if(40<++j&&++j<70)
-                        publishProgress(-1);
-                    else
-                        publishProgress(++j);
-
-
                 }
-
+                return true;
             }catch (Exception e){
                 e.printStackTrace();
             }
 
-            return null;
+            return false;
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
             //執行中 可以在這邊告知使用者進度
-
             //取得更新的進度
-            if(values[0]==-1){
-                progressDialog.setMessage("狀態異常，重新嘗試中...");
+            progressDialog.setProgress(values[0]);
 
-            }
-            else
-                progressDialog.setProgress(values[0]);
-            progressDialog.show();
             super.onProgressUpdate(values);
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
+        protected void onPostExecute(Boolean aBoolean) {
             //執行後 完成背景任務
-
             //當完成的時候，把進度條消失
             progressDialog.dismiss();
-            Toast.makeText(FriendshipActivity.this, "同步完成", Toast.LENGTH_LONG).show();
-            super.onPostExecute(aVoid);
+            String showMsg;
+            if (aBoolean)
+                showMsg = "同步完成";
+            else if (!HttpUtils.IsInternetAvailable(getApplicationContext()))
+                showMsg = "網路異常，請重新嘗試！";
+            else
+                showMsg = "同步失敗，請重新嘗試！";
+
+            Toast.makeText(FriendshipActivity.this, showMsg, Toast.LENGTH_LONG).show();
+
+            super.onPostExecute(aBoolean);
         }
     }
 }
