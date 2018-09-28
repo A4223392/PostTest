@@ -250,6 +250,8 @@ public class FriendshipActivity extends AppCompatActivity
                         case MyMessages.Progressing:
                             Bundle bundle = msg.getData();
                             showMsg = bundle.getString("post_msg");
+                            activity.btnAddFriend.setEnabled(false);    //重製按鈕
+                            activity.txvFriendName.setText("(好友姓名)");
                             Toast.makeText(activity, showMsg, Toast.LENGTH_LONG).show();
                             break;
                         case MyMessages.Disconnect:
@@ -461,7 +463,7 @@ public class FriendshipActivity extends AppCompatActivity
             }
         });
 
-        //同步好友列表
+        //[測試用]同步好友列表
         btnSyncFriendList.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -476,7 +478,9 @@ public class FriendshipActivity extends AppCompatActivity
             DH = new DBHelper(FriendshipActivity.this);
             db = DH.getReadableDatabase();
             final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
+//            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
+            sdf.setTimeZone(calendar.getTimeZone());
+
             switch (which) {
                 case DialogInterface.BUTTON_POSITIVE:
                     //取得自己的id
@@ -554,8 +558,6 @@ public class FriendshipActivity extends AppCompatActivity
                                             message.setData(bundle);
                                             addFriendHandler.sendMessage(message);
                                         }else {
-                                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-                                            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
                                             //寫入本機好友表
                                             String sqlCmd = String.format(//注意空格
                                                     "INSERT INTO mbr_friendship (id, member_id, friend_id, nickname, renew_time) VALUES " +
@@ -573,7 +575,7 @@ public class FriendshipActivity extends AppCompatActivity
                                                     myName, //myName
                                                     sdf.format(calendar.getTime()));
                                             db.execSQL(sqlCmd);
-                                            msg = "加入成功！\n";
+                                            msg = "加入成功！";
                                         }
                                         bundle.putString("post_msg", msg);
                                         message.setData(bundle);
@@ -666,7 +668,7 @@ public class FriendshipActivity extends AppCompatActivity
             }
             //初始化進度條並設定樣式及顯示的資訊。
             progressDialog = new ProgressDialog(FriendshipActivity.this);
-            progressDialog.setTitle("同步中");
+            progressDialog.setTitle("同步中...");
             progressDialog.setCancelable(false);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             progressDialog.setMax(jsonArray.length());    //有幾筆
@@ -677,7 +679,6 @@ public class FriendshipActivity extends AppCompatActivity
 
         @Override
         protected Boolean doInBackground(Void... voids) {
-
             //執行中 在背景做事情
             try {
                 SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
@@ -685,12 +686,14 @@ public class FriendshipActivity extends AppCompatActivity
                 String path;
                 JSONObject returnJsonObj ;
                 int progressValue = 0;
+                int tryingCounter = 0;
                 DH = new DBHelper(FriendshipActivity.this);
                 db = DH.getReadableDatabase();
                 final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
                 sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
 
                 for (int i = 0; i < jsonArray.length() ; ) {
+                    tryingCounter++;
                     path = MainActivity.Path.friendShip + jsonArray.getJSONObject(i).getString("id") + "/";
                     returnJsonObj = HttpUtils.Patch(path, token, jsonArray.getJSONObject(i).toString());
                     if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功(SQLite比MySQL新 或 時間相同)
@@ -701,7 +704,7 @@ public class FriendshipActivity extends AppCompatActivity
                         db.execSQL(sqlCmd);
                         publishProgress(progressValue += 1);  //完成一筆進度就加一
                         i++;
-                        Thread.sleep(10000L);    //減速
+                        Thread.sleep(5000L);    //減速
                     }else if(returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_OK) {    //成功(MySQL比SQLite新)
                         //用回傳的資料更新本機資料
                         //格式轉換
@@ -719,11 +722,13 @@ public class FriendshipActivity extends AppCompatActivity
                         db.execSQL(sqlCmd);
                         publishProgress(progressValue += 1);  //完成一筆進度就加一
                         i++;
-                        Thread.sleep(10000L);    //減速
+                        Thread.sleep(5000L);    //減速
                     }
                     else {  //失敗
-                        i--;
-                        Thread.sleep(10000L);
+                        if(tryingCounter>3)    //1筆資料最多嘗試3次
+                            return false;
+                        else
+                            Thread.sleep(5000L);
                     }
                 }
                 return true;
