@@ -108,7 +108,7 @@ public class HttpUtils {
     }
 
     public static JSONObject Register(String path, Map<String, String> params) {
-        JSONObject resultObj = null;
+        JSONObject resultObj = new JSONObject();
         try {
             HttpClient httpClient = new DefaultHttpClient();
             HttpPost httpPost = new HttpPost(path);
@@ -124,7 +124,11 @@ public class HttpUtils {
             if(responseCode == HttpStatus.SC_CREATED){
                 resultObj = new JSONObject(EntityUtils.toString(httpResponse.getEntity(), HTTP.UTF_8)); //注意編碼
                 resultObj.put("responseCode", String.valueOf(responseCode));
-            }else{
+            }else if(responseCode == HttpStatus.SC_BAD_REQUEST){
+                resultObj = new JSONObject(EntityUtils.toString(httpResponse.getEntity(), HTTP.UTF_8)); //注意編碼
+                resultObj.put("responseCode", String.valueOf(responseCode));    //加入回應碼
+            }
+            else{
                 resultObj.put("responseCode", String.valueOf(responseCode));    //加入回應碼
             }
         }catch(Exception e){
@@ -245,7 +249,7 @@ public class HttpUtils {
     }
 
     public static JSONObject Patch(String path, String token, String jsonStrData) {
-        JSONObject resultObj = null;
+        JSONObject resultObj = new JSONObject();
         try {
             HttpClient httpClient = new DefaultHttpClient();
             HttpPatch httpPatch = new HttpPatch(path);

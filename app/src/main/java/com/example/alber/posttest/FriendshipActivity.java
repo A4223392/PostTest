@@ -23,12 +23,21 @@ import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+
+import java.sql.Timestamp;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+<<<<<<< HEAD
+
+=======
+>>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 
 public class FriendshipActivity extends AppCompatActivity
@@ -42,8 +51,7 @@ public class FriendshipActivity extends AppCompatActivity
     SQLiteDatabase db;
     Cursor cursor;
     private JSONObject jsonObjectSearchFriend = null;
-    private Calendar datetime = Calendar.getInstance(Locale.TAIWAN);
-
+    private Calendar calendar = Calendar.getInstance(Locale.TAIWAN);
 
     private final GetHandler getHandler = new GetHandler(FriendshipActivity.this);
 //    private final FriendListHandler friendListHandler = new FriendListHandler(FriendshipActivity.this);
@@ -374,7 +382,7 @@ public class FriendshipActivity extends AppCompatActivity
                 DH = new DBHelper(FriendshipActivity.this);
                 db = DH.getReadableDatabase();
                 String msg = "";
-                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname FROM mbr_friendship", null);
+                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname,renew_time FROM mbr_friendship", null);
 
                 int rowsCount = cursor.getCount();
                 if (rowsCount != 0) {
@@ -384,6 +392,7 @@ public class FriendshipActivity extends AppCompatActivity
                         msg += cursor.getString(1) + " ";
                         msg += cursor.getString(2) + " ";
                         msg += cursor.getString(3) + " ";
+                        msg += cursor.getString(4) + " ";
 
                         msg += "\n";
 
@@ -468,6 +477,8 @@ public class FriendshipActivity extends AppCompatActivity
         try {
             DH = new DBHelper(FriendshipActivity.this);
             db = DH.getReadableDatabase();
+            final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
             switch (which) {
                 case DialogInterface.BUTTON_POSITIVE:
                     //取得自己的id
@@ -483,13 +494,14 @@ public class FriendshipActivity extends AppCompatActivity
                         //寫入資料庫
                         //寫入本機會員資料表
                         String sqlCmd = String.format(//注意空格
-                                "INSERT INTO mbr_member (id, name, localpicture, dbpicture) " +
-                                        "SELECT * FROM (SELECT %s, \'%s\', \'%s\', \'%s\') " +
+                                "INSERT INTO mbr_member (id, name, localpicture, dbpicture, renew_time) " +
+                                        "SELECT * FROM (SELECT %s, \'%s\', \'%s\', \'%s\', \'%s\') " +
                                         "WHERE NOT EXISTS (SELECT * FROM mbr_member WHERE id=%s)",
                                 friendId,
                                 jsonObjectSearchFriend.getString("name"),
                                 jsonObjectSearchFriend.getString("localpicture"),
                                 jsonObjectSearchFriend.getString("dbpicture"),
+                                sdf.format(calendar.getTime()),
                                 friendId);
                         db.execSQL(sqlCmd);//不存在才新增
 
@@ -513,6 +525,7 @@ public class FriendshipActivity extends AppCompatActivity
                                     params.put("member_id", myId);  //自己
                                     params.put("friend_id", friendId);  //對方
                                     params.put("nickname", friendName);
+                                    params.put("renew_time", sdf.format(calendar.getTime()));
 
                                     JSONObject jsonObject1 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
 
@@ -532,6 +545,7 @@ public class FriendshipActivity extends AppCompatActivity
                                         params.put("member_id", friendId);  //對方
                                         params.put("friend_id", myId);  //自己
                                         params.put("nickname", myName);
+                                        params.put("renew_time", sdf.format(calendar.getTime()));
 
                                         JSONObject jsonObject2 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
 
@@ -542,6 +556,8 @@ public class FriendshipActivity extends AppCompatActivity
                                             message.setData(bundle);
                                             addFriendHandler.sendMessage(message);
                                         }else {
+                                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+                                            sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
                                             //寫入本機好友表
                                             String sqlCmd = String.format(//注意空格
                                                     "INSERT INTO mbr_friendship (id, member_id, friend_id, nickname, renew_time) VALUES " +
@@ -551,14 +567,28 @@ public class FriendshipActivity extends AppCompatActivity
                                                     jsonObject1.getInt("member_id"),    //自己
                                                     jsonObject1.getInt("friend_id"), //對方
                                                     friendName,   //friendName
-                                                    datetime.getTime().toString(),
+<<<<<<< HEAD
+                                                    sdf.format(calendar.getTime()),
+=======
+//                                                    datetime.getTime().toString(),
+                                                    sdf.format(datetime.getTime().toString()),
+>>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
 
                                                     jsonObject2.getInt("id"),
                                                     jsonObject2.getInt("member_id"),    //對方
                                                     jsonObject2.getInt("friend_id"), //自己
-                                                    myName,   //myName
-                                                    datetime.getTime().toString());
+<<<<<<< HEAD
+                                                    myName, //myName
+                                                    sdf.format(calendar.getTime()));
+
                                             db.execSQL(sqlCmd);
+=======
+                                                    myName,   //myName
+//                                                    datetime.getTime().toString(),
+                                                    sdf.format(datetime.getTime().toString()));
+
+                                                    db.execSQL(sqlCmd);
+>>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
                                             msg = "加入成功！\n";
                                         }
                                         bundle.putString("post_msg", msg);
@@ -614,42 +644,6 @@ public class FriendshipActivity extends AppCompatActivity
         super.onDestroy();
     }
 
-    private void startPostThread(final String myId, final String myName, final String friendId, final String friendName) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                addFriendHandler.sendEmptyMessage(MyMessages.Connecting);
-                Message message = new Message();
-                Bundle bundle = new Bundle();
-
-                message.what = FriendshipActivity.MyMessages.Progressing;
-                SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
-                String token = tokenPref.getString("token", "");//讀取已儲存的Token
-                Map<String, String> params = new HashMap<>();
-                params.put("member_id", myId);  //自己
-                params.put("friend_id", friendId);  //對方
-                params.put("nickname", friendName);
-
-                JSONObject jsonObject1 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
-
-                params = new HashMap<>();
-                params.put("member_id", friendId);  //對方
-                params.put("friend_id", myId);  //自己
-                params.put("nickname", myName);
-
-                JSONObject jsonObject2 = HttpUtils.Post(MainActivity.Path.friendShip, token, params);
-
-                bundle.putString("post_jsonString", jsonObject1.toString());    //轉成String
-                message.setData(bundle);
-                addFriendHandler.sendMessage(message);
-
-                addFriendHandler.sendEmptyMessage(MyMessages.Disconnect);
-            }
-        });
-
-        thread.start();
-    }
-
     public class SyncFriendList extends AsyncTask<Void,Integer,Boolean>{
         //http://aiur3908.blogspot.com/2015/06/android-asynctask.html
         //https://blog.csdn.net/carson_ho/article/details/79314325
@@ -659,11 +653,13 @@ public class FriendshipActivity extends AppCompatActivity
         @Override
         protected void onPreExecute() {
             //執行前 設定可以在這邊設定
-          try {
+            try {
+
                 //讀取本機資料
                 DH = new DBHelper(FriendshipActivity.this);
                 db = DH.getReadableDatabase();
 
+                //找出syncstatus=0有修改需同步的資料
                 cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname,renew_time FROM mbr_friendship WHERE syncstatus=1", null);
                 int rowsCount = cursor.getCount();
                 if (rowsCount != 0) {
@@ -674,7 +670,11 @@ public class FriendshipActivity extends AppCompatActivity
                         jsonObject.put("member_id", cursor.getString(1));
                         jsonObject.put("friend_id", cursor.getString(2));
                         jsonObject.put("nickname", cursor.getString(3));
-                        jsonObject.put("renew_time", cursor.getString(4));
+<<<<<<< HEAD
+                        jsonObject.put("renew_time", cursor.getString(4));  //%Y-%m-%d %H:%M:%S.%f
+=======
+                        jsonObject.put("renew_time", cursor.getString(4));    //傳該筆紀錄的更新時間上去比對
+>>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
                         jsonArray.put(jsonObject);
                         cursor.moveToNext();
                     }
@@ -689,33 +689,67 @@ public class FriendshipActivity extends AppCompatActivity
             progressDialog.setCancelable(false);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             progressDialog.setMax(jsonArray.length());    //有幾筆
-            progressDialog.setMax(100);    //有幾筆
+            progressDialog.show();
 
             super.onPreExecute();
-
         }
 
         @Override
         protected Boolean doInBackground(Void... voids) {
+
             //執行中 在背景做事情
             try {
                 SharedPreferences tokenPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
                 String token = tokenPref.getString("token", "");//讀取已儲存的Token
-
+                String path;
                 JSONObject returnJsonObj ;
                 int progressValue = 0;
+                DH = new DBHelper(FriendshipActivity.this);
+                db = DH.getReadableDatabase();
+                final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+                sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
+
                 for (int i = 0; i < jsonArray.length() ; ) {
-                    returnJsonObj = HttpUtils.Patch(MainActivity.Path.friendShip, token, jsonArray.getJSONObject(i).toString());
+<<<<<<< HEAD
+                    path = MainActivity.Path.friendShip + jsonArray.getJSONObject(i).getString("id") + "/";
+                    returnJsonObj = HttpUtils.Patch(path, token, jsonArray.getJSONObject(i).toString());
+                    if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功(SQLite比MySQL新 或 時間相同)
+                        //更新syncstatus=1已同步
+                        String sqlCmd = String.format(//注意空格
+                                "UPDATE mbr_friendship SET syncstatus=1 WHERE id=%s",
+                                jsonArray.getJSONObject(i).getString("id"));
+                        db.execSQL(sqlCmd);
+                        publishProgress(progressValue += 1);  //完成一筆進度就加一
+=======
+                    String path = MainActivity.Path.friendShip + jsonArray.getJSONObject(i).getString("id") + "/";
+                    returnJsonObj = HttpUtils.Patch(path, token, jsonArray.getJSONObject(i).toString());
                     if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功
                         publishProgress(progressValue += 1);  //完成一筆就加一
+>>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
                         i++;
-                        Thread.sleep(3000L);    //減速
-                    } else {  //失敗
-//                        progressDialog.setMessage("狀態異常，重新嘗試中");
-//                        Thread.sleep(3000L);
-//                        i--;
-//                        publishProgress(-1);
-                        return false;
+                        Thread.sleep(10000L);    //減速
+                    }else if(returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_OK) {    //成功(MySQL比SQLite新)
+                        //用回傳的資料更新本機資料
+                        //格式轉換
+                        SimpleDateFormat sourceFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");  //ISO 8601
+                        Date convertedDate = sourceFormat.parse(returnJsonObj.getString("renew_time"));
+                        //更新本機資料
+                        String sqlCmd = String.format(//注意空格
+                                "UPDATE mbr_friendship SET member_id=%s,friend_id=%s," +
+                                        "nickname=\'%s\',renew_time=\'%s\',syncstatus=1 WHERE id=%s",
+                                returnJsonObj.getString("member_id"),
+                                returnJsonObj.getString("friend_id"),
+                                returnJsonObj.getString("nickname"),
+                                sdf.format(convertedDate),
+                                returnJsonObj.getString("id"));
+                        db.execSQL(sqlCmd);
+                        publishProgress(progressValue += 1);  //完成一筆進度就加一
+                        i++;
+                        Thread.sleep(10000L);    //減速
+                    }
+                    else {  //失敗
+                        i--;
+                        Thread.sleep(10000L);
                     }
                 }
                 return true;
