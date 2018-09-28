@@ -29,10 +29,7 @@ import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-<<<<<<< HEAD
 
-=======
->>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -52,6 +49,7 @@ public class FriendshipActivity extends AppCompatActivity
     Cursor cursor;
     private JSONObject jsonObjectSearchFriend = null;
     private Calendar calendar = Calendar.getInstance(Locale.TAIWAN);
+
 
     private final GetHandler getHandler = new GetHandler(FriendshipActivity.this);
 //    private final FriendListHandler friendListHandler = new FriendListHandler(FriendshipActivity.this);
@@ -567,28 +565,14 @@ public class FriendshipActivity extends AppCompatActivity
                                                     jsonObject1.getInt("member_id"),    //自己
                                                     jsonObject1.getInt("friend_id"), //對方
                                                     friendName,   //friendName
-<<<<<<< HEAD
                                                     sdf.format(calendar.getTime()),
-=======
-//                                                    datetime.getTime().toString(),
-                                                    sdf.format(datetime.getTime().toString()),
->>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
 
                                                     jsonObject2.getInt("id"),
                                                     jsonObject2.getInt("member_id"),    //對方
                                                     jsonObject2.getInt("friend_id"), //自己
-<<<<<<< HEAD
                                                     myName, //myName
                                                     sdf.format(calendar.getTime()));
-
                                             db.execSQL(sqlCmd);
-=======
-                                                    myName,   //myName
-//                                                    datetime.getTime().toString(),
-                                                    sdf.format(datetime.getTime().toString()));
-
-                                                    db.execSQL(sqlCmd);
->>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
                                             msg = "加入成功！\n";
                                         }
                                         bundle.putString("post_msg", msg);
@@ -670,11 +654,8 @@ public class FriendshipActivity extends AppCompatActivity
                         jsonObject.put("member_id", cursor.getString(1));
                         jsonObject.put("friend_id", cursor.getString(2));
                         jsonObject.put("nickname", cursor.getString(3));
-<<<<<<< HEAD
                         jsonObject.put("renew_time", cursor.getString(4));  //%Y-%m-%d %H:%M:%S.%f
-=======
-                        jsonObject.put("renew_time", cursor.getString(4));    //傳該筆紀錄的更新時間上去比對
->>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
+
                         jsonArray.put(jsonObject);
                         cursor.moveToNext();
                     }
@@ -710,7 +691,6 @@ public class FriendshipActivity extends AppCompatActivity
                 sdf.setTimeZone(TimeZone.getTimeZone("Asia/Taipei"));
 
                 for (int i = 0; i < jsonArray.length() ; ) {
-<<<<<<< HEAD
                     path = MainActivity.Path.friendShip + jsonArray.getJSONObject(i).getString("id") + "/";
                     returnJsonObj = HttpUtils.Patch(path, token, jsonArray.getJSONObject(i).toString());
                     if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功(SQLite比MySQL新 或 時間相同)
@@ -720,12 +700,6 @@ public class FriendshipActivity extends AppCompatActivity
                                 jsonArray.getJSONObject(i).getString("id"));
                         db.execSQL(sqlCmd);
                         publishProgress(progressValue += 1);  //完成一筆進度就加一
-=======
-                    String path = MainActivity.Path.friendShip + jsonArray.getJSONObject(i).getString("id") + "/";
-                    returnJsonObj = HttpUtils.Patch(path, token, jsonArray.getJSONObject(i).toString());
-                    if (returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_NO_CONTENT) {   //成功
-                        publishProgress(progressValue += 1);  //完成一筆就加一
->>>>>>> 8d26f6f3f15d563a56fdb4501b74e58c7b1fa1ef
                         i++;
                         Thread.sleep(10000L);    //減速
                     }else if(returnJsonObj.getInt("responseCode") == HttpURLConnection.HTTP_OK) {    //成功(MySQL比SQLite新)
