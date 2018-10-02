@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="好友列表\n(本機)"
+        android:text="全部資料\n(本機)"
         app:layout_constraintStart_toEndOf="@+id/btnGet"
         app:layout_constraintTop_toTopOf="parent" />
 

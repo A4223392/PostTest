@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText txtEmail, txtPwd, txtPwdConfirm;
     private Spinner spnType;
     private static String showMsg = "\n";
+    private DBHelper DH;
     private SQLiteDatabase db;
     private final String DB_NAME = "MYLOCALDB";
 
@@ -65,6 +66,10 @@ public class MainActivity extends AppCompatActivity {
         public static final String api_token_refresh = "https://www.177together.com/api-token-refresh/";
         public static final String member = "https://www.177together.com/api/member/";
         public static final String friendShip = "https://www.177together.com/api/friendship/";
+        public static final String sort = "https://www.177together.com/api/sort/";
+        public static final String subsort = "https://www.177together.com/api/subsort/";
+        public static final String account = "https://www.177together.com/api/account/";
+        public static final String project = "https://www.177together.com/api/project/";
     }
 
     //https://stackoverflow.com/questions/3806051/accessing-sharedpreferences-through-static-methods
@@ -620,5 +625,153 @@ public class MainActivity extends AppCompatActivity {
             }
             db.insert(tableName, null, cv);
         }
+    }
+
+    public void InitialMemberData(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    DH = new DBHelper(MainActivity.this);
+                    db = DH.getReadableDatabase();
+                    SharedPreferences myPref = getSharedPreferences("jwt_token", MODE_PRIVATE);
+                    String token = myPref.getString("token", "");    //讀取已儲存的Token
+                    String strPayload = myPref.getString("PAYLOAD", "");
+                    JSONObject jsonPayload = StringToJSON(strPayload);
+                    String member_id = String.valueOf(jsonPayload.getInt("user_id"));   //讀取id
+                    String path;
+                    String TB_NAME;
+                    String[] col;
+                    String[] data;
+
+                    //讀取並寫入本機分類
+                    path = Path.sort + "?member_id=" + member_id;
+                    JSONArray A = HttpUtils.Get(path, token);  //注意位置(最後一個是responseCode)
+                    TB_NAME = "mbr_sort";
+                    col = new String[]{"id", "type", "name", "icon", "renew_time", "member_id"};
+                    data = new String[]{
+                            A.getJSONObject(0).getString("id"), "0", "食品酒水", null, A.getJSONObject(0).getString("renew_time"), member_id,
+                            A.getJSONObject(1).getString("id"), "0", "行車交通", null, A.getJSONObject(1).getString("renew_time"), member_id,
+                            A.getJSONObject(2).getString("id"), "0", "居家生活", null, A.getJSONObject(2).getString("renew_time"), member_id,
+                            A.getJSONObject(3).getString("id"), "0", "通訊媒體", null, A.getJSONObject(3).getString("renew_time"), member_id,
+                            A.getJSONObject(4).getString("id"), "0", "教育教養", null, A.getJSONObject(4).getString("renew_time"), member_id,
+                            A.getJSONObject(5).getString("id"), "0", "人際關係", null, A.getJSONObject(5).getString("renew_time"), member_id,
+                            A.getJSONObject(6).getString("id"), "0", "休閒娛樂", null, A.getJSONObject(6).getString("renew_time"), member_id,
+                            A.getJSONObject(7).getString("id"), "0", "醫療保健", null, A.getJSONObject(7).getString("renew_time"), member_id,
+                            A.getJSONObject(8).getString("id"), "0", "財務金融", null, A.getJSONObject(8).getString("renew_time"), member_id,
+                            A.getJSONObject(9).getString("id"), "0", "其他雜項", null, A.getJSONObject(9).getString("renew_time"), member_id,
+                            A.getJSONObject(10).getString("id"), "0", "大型支出", null, A.getJSONObject(10).getString("renew_time"), member_id,
+                            A.getJSONObject(11).getString("id"), "0", "電子發票", null, A.getJSONObject(11).getString("renew_time"), member_id,
+                            A.getJSONObject(12).getString("id"), "1", "理財收入", null, A.getJSONObject(12).getString("renew_time"), member_id,
+                            A.getJSONObject(13).getString("id"), "1", "其他收入", null, A.getJSONObject(13).getString("renew_time"), member_id,
+                            A.getJSONObject(14).getString("id"), "1", "薪資報酬", null, A.getJSONObject(14).getString("renew_time"), member_id
+                    };
+                    AddData(TB_NAME, col, data);
+                    Thread.sleep(500);
+
+                    //讀取並寫入本機子分類
+                    path = Path.subsort + "?member_id=" + member_id;
+                    JSONArray B = HttpUtils.Get(path, token);  //注意位置(最後一個是responseCode)
+                    TB_NAME = "mbr_subsort";
+                    col = new String[]{"id", "type", "name", "icon", "renew_time", "member_id", "sort_id"};
+                    data = new String[]{
+                            B.getJSONObject(0).getString("id"), "0", "早餐", null, B.getJSONObject(0).getString("renew_time"), member_id, B.getJSONObject(0).getString("sort_id"),
+                            B.getJSONObject(1).getString("id"), "0", "午餐", null, B.getJSONObject(1).getString("renew_time"), member_id, B.getJSONObject(1).getString("sort_id"),
+                            B.getJSONObject(2).getString("id"), "0", "晚餐", null, B.getJSONObject(2).getString("renew_time"), member_id, B.getJSONObject(2).getString("sort_id"),
+                            B.getJSONObject(3).getString("id"), "0", "飲品", null, B.getJSONObject(3).getString("renew_time"), member_id, B.getJSONObject(3).getString("sort_id"),
+                            B.getJSONObject(4).getString("id"), "0", "水果", null, B.getJSONObject(4).getString("renew_time"), member_id, B.getJSONObject(4).getString("sort_id"),
+                            B.getJSONObject(5).getString("id"), "0", "零食", null, B.getJSONObject(5).getString("renew_time"), member_id, B.getJSONObject(5).getString("sort_id"),
+                            B.getJSONObject(6).getString("id"), "0", "公車", null, B.getJSONObject(6).getString("renew_time"), member_id, B.getJSONObject(6).getString("sort_id"),
+                            B.getJSONObject(7).getString("id"), "0", "捷運", null, B.getJSONObject(7).getString("renew_time"), member_id, B.getJSONObject(7).getString("sort_id"),
+                            B.getJSONObject(8).getString("id"), "0", "公共自行車", null, B.getJSONObject(8).getString("renew_time"), member_id, B.getJSONObject(8).getString("sort_id"),
+                            B.getJSONObject(9).getString("id"), "0", "鐵路", null, B.getJSONObject(9).getString("renew_time"), member_id, B.getJSONObject(9).getString("sort_id"),
+                            B.getJSONObject(10).getString("id"), "0", "計程車", null, B.getJSONObject(10).getString("renew_time"), member_id, B.getJSONObject(10).getString("sort_id"),
+                            B.getJSONObject(11).getString("id"), "0", "燃料費", null, B.getJSONObject(11).getString("renew_time"), member_id, B.getJSONObject(11).getString("sort_id"),
+                            B.getJSONObject(12).getString("id"), "0", "飛機", null, B.getJSONObject(12).getString("renew_time"), member_id, B.getJSONObject(12).getString("sort_id"),
+                            B.getJSONObject(13).getString("id"), "0", "日常雜貨", null, B.getJSONObject(13).getString("renew_time"), member_id, B.getJSONObject(13).getString("sort_id"),
+                            B.getJSONObject(14).getString("id"), "0", "嬰兒用品", null, B.getJSONObject(14).getString("renew_time"), member_id, B.getJSONObject(14).getString("sort_id"),
+                            B.getJSONObject(15).getString("id"), "0", "寵物用品", null, B.getJSONObject(15).getString("renew_time"), member_id, B.getJSONObject(15).getString("sort_id"),
+                            B.getJSONObject(16).getString("id"), "0", "治裝費", null, B.getJSONObject(16).getString("renew_time"), member_id, B.getJSONObject(16).getString("sort_id"),
+                            B.getJSONObject(17).getString("id"), "0", "房租", null, B.getJSONObject(17).getString("renew_time"), member_id, B.getJSONObject(17).getString("sort_id"),
+                            B.getJSONObject(18).getString("id"), "0", "電話費", null, B.getJSONObject(18).getString("renew_time"), member_id, B.getJSONObject(18).getString("sort_id"),
+                            B.getJSONObject(19).getString("id"), "0", "網路費", null, B.getJSONObject(19).getString("renew_time"), member_id, B.getJSONObject(19).getString("sort_id"),
+                            B.getJSONObject(20).getString("id"), "0", "多媒體", null, B.getJSONObject(20).getString("renew_time"), member_id, B.getJSONObject(20).getString("sort_id"),
+                            B.getJSONObject(21).getString("id"), "0", "郵寄費", null, B.getJSONObject(21).getString("renew_time"), member_id, B.getJSONObject(21).getString("sort_id"),
+                            B.getJSONObject(22).getString("id"), "0", "新聞雜誌", null, B.getJSONObject(22).getString("renew_time"), member_id, B.getJSONObject(22).getString("sort_id"),
+                            B.getJSONObject(23).getString("id"), "0", "參考書籍", null, B.getJSONObject(23).getString("renew_time"), member_id, B.getJSONObject(23).getString("sort_id"),
+                            B.getJSONObject(24).getString("id"), "0", "報名費", null, B.getJSONObject(24).getString("renew_time"), member_id, B.getJSONObject(24).getString("sort_id"),
+                            B.getJSONObject(25).getString("id"), "0", "學雜費", null, B.getJSONObject(25).getString("renew_time"), member_id, B.getJSONObject(25).getString("sort_id"),
+                            B.getJSONObject(26).getString("id"), "0", "補習費", null, B.getJSONObject(26).getString("renew_time"), member_id, B.getJSONObject(26).getString("sort_id"),
+                            B.getJSONObject(27).getString("id"), "0", "聚餐", null, B.getJSONObject(27).getString("renew_time"), member_id, B.getJSONObject(27).getString("sort_id"),
+                            B.getJSONObject(28).getString("id"), "0", "應酬", null, B.getJSONObject(28).getString("renew_time"), member_id, B.getJSONObject(28).getString("sort_id"),
+                            B.getJSONObject(29).getString("id"), "0", "禮品", null, B.getJSONObject(29).getString("renew_time"), member_id, B.getJSONObject(29).getString("sort_id"),
+                            B.getJSONObject(30).getString("id"), "0", "孝親", null, B.getJSONObject(30).getString("renew_time"), member_id, B.getJSONObject(30).getString("sort_id"),
+                            B.getJSONObject(31).getString("id"), "0", "禮金", null, B.getJSONObject(31).getString("renew_time"), member_id, B.getJSONObject(31).getString("sort_id"),
+                            B.getJSONObject(32).getString("id"), "0", "公益", null, B.getJSONObject(32).getString("renew_time"), member_id, B.getJSONObject(32).getString("sort_id"),
+                            B.getJSONObject(33).getString("id"), "0", "電影動畫", null, B.getJSONObject(33).getString("renew_time"), member_id, B.getJSONObject(33).getString("sort_id"),
+                            B.getJSONObject(34).getString("id"), "0", "音樂", null, B.getJSONObject(34).getString("renew_time"), member_id, B.getJSONObject(34).getString("sort_id"),
+                            B.getJSONObject(35).getString("id"), "0", "書籍", null, B.getJSONObject(35).getString("renew_time"), member_id, B.getJSONObject(35).getString("sort_id"),
+                            B.getJSONObject(36).getString("id"), "0", "遊戲", null, B.getJSONObject(36).getString("renew_time"), member_id, B.getJSONObject(36).getString("sort_id"),
+                            B.getJSONObject(37).getString("id"), "0", "旅遊", null, B.getJSONObject(37).getString("renew_time"), member_id, B.getJSONObject(37).getString("sort_id"),
+                            B.getJSONObject(38).getString("id"), "0", "展演", null, B.getJSONObject(38).getString("renew_time"), member_id, B.getJSONObject(38).getString("sort_id"),
+                            B.getJSONObject(39).getString("id"), "0", "診療費", null, B.getJSONObject(39).getString("renew_time"), member_id, B.getJSONObject(39).getString("sort_id"),
+                            B.getJSONObject(40).getString("id"), "0", "保健食品", null, B.getJSONObject(40).getString("renew_time"), member_id, B.getJSONObject(40).getString("sort_id"),
+                            B.getJSONObject(41).getString("id"), "0", "美容美髮", null, B.getJSONObject(41).getString("renew_time"), member_id, B.getJSONObject(41).getString("sort_id"),
+                            B.getJSONObject(42).getString("id"), "0", "手續費", null, B.getJSONObject(42).getString("renew_time"), member_id, B.getJSONObject(42).getString("sort_id"),
+                            B.getJSONObject(43).getString("id"), "0", "勞健保費", null, B.getJSONObject(43).getString("renew_time"), member_id, B.getJSONObject(43).getString("sort_id"),
+                            B.getJSONObject(44).getString("id"), "0", "人身保險", null, B.getJSONObject(44).getString("renew_time"), member_id, B.getJSONObject(44).getString("sort_id"),
+                            B.getJSONObject(45).getString("id"), "0", "產險", null, B.getJSONObject(45).getString("renew_time"), member_id, B.getJSONObject(45).getString("sort_id"),
+                            B.getJSONObject(46).getString("id"), "0", "稅務", null, B.getJSONObject(46).getString("renew_time"), member_id, B.getJSONObject(46).getString("sort_id"),
+                            B.getJSONObject(47).getString("id"), "0", "分期付款", null, B.getJSONObject(47).getString("renew_time"), member_id, B.getJSONObject(47).getString("sort_id"),
+                            B.getJSONObject(48).getString("id"), "0", "投資損益", null, B.getJSONObject(48).getString("renew_time"), member_id, B.getJSONObject(48).getString("sort_id"),
+                            B.getJSONObject(49).getString("id"), "0", "其他", null, B.getJSONObject(49).getString("renew_time"), member_id, B.getJSONObject(49).getString("sort_id"),
+                            B.getJSONObject(50).getString("id"), "0", "家電", null, B.getJSONObject(50).getString("renew_time"), member_id, B.getJSONObject(50).getString("sort_id"),
+                            B.getJSONObject(51).getString("id"), "0", "家具", null, B.getJSONObject(51).getString("renew_time"), member_id, B.getJSONObject(51).getString("sort_id"),
+                            B.getJSONObject(52).getString("id"), "0", "車輛", null, B.getJSONObject(52).getString("renew_time"), member_id, B.getJSONObject(52).getString("sort_id"),
+                            B.getJSONObject(53).getString("id"), "0", "房產", null, B.getJSONObject(53).getString("renew_time"), member_id, B.getJSONObject(53).getString("sort_id"),
+                            B.getJSONObject(54).getString("id"), "0", "電子發票", null, B.getJSONObject(54).getString("renew_time"), member_id, B.getJSONObject(54).getString("sort_id"),
+                            B.getJSONObject(55).getString("id"), "0", "利息", null, B.getJSONObject(55).getString("renew_time"), member_id, B.getJSONObject(55).getString("sort_id"),
+                            B.getJSONObject(56).getString("id"), "0", "股息", null, B.getJSONObject(56).getString("renew_time"), member_id, B.getJSONObject(56).getString("sort_id"),
+                            B.getJSONObject(57).getString("id"), "0", "禮金", null, B.getJSONObject(57).getString("renew_time"), member_id, B.getJSONObject(57).getString("sort_id"),
+                            B.getJSONObject(58).getString("id"), "0", "回饋金", null, B.getJSONObject(58).getString("renew_time"), member_id, B.getJSONObject(58).getString("sort_id"),
+                            B.getJSONObject(59).getString("id"), "0", "補助金", null, B.getJSONObject(59).getString("renew_time"), member_id, B.getJSONObject(59).getString("sort_id"),
+                            B.getJSONObject(60).getString("id"), "0", "薪水", null, B.getJSONObject(60).getString("renew_time"), member_id, B.getJSONObject(60).getString("sort_id"),
+                            B.getJSONObject(61).getString("id"), "0", "獎金", null, B.getJSONObject(61).getString("renew_time"), member_id, B.getJSONObject(61).getString("sort_id")
+                    };
+                    AddData(TB_NAME, col, data);
+                    Thread.sleep(500);
+
+                    //讀取並寫入本機帳戶
+                    path = Path.account + "?member_id=" + member_id;
+                    JSONArray C = HttpUtils.Get(path, token);  //注意位置(最後一個是responseCode)
+                    TB_NAME = "mbr_account";
+                    col = new String[]{"id", "name", "initialamount", "balance", "FX", "renew_time", "accounttype_id", "member_id"};
+                    data = new String[]{
+                            C.getJSONObject(0).getString("id"), "現金", "0", "0", "1:1", C.getJSONObject(0).getString("renew_time"), "1", member_id,
+                            C.getJSONObject(1).getString("id"), "銀行簽帳卡", "0", "0", "1:1", C.getJSONObject(1).getString("renew_time"), "2", member_id,
+                            C.getJSONObject(2).getString("id"), "悠遊卡", "0", "0", "1:1", C.getJSONObject(2).getString("renew_time"), "3", member_id
+                    };
+                    AddData(TB_NAME, col, data);
+                    Thread.sleep(500);
+
+                    //讀取並寫入本機專案
+                    path = Path.project + "?member_id=" + member_id;
+                    JSONArray D = HttpUtils.Get(path, token);  //注意位置(最後一個是responseCode)
+                    TB_NAME = "mbr_project";
+                    col = new String[]{"id", "name", "renew_time", "member_id"};
+                    data = new String[]{
+                            D.getJSONObject(0).getString("id"), "一般", D.getJSONObject(0).getString("renew_time"), member_id,
+                            D.getJSONObject(1).getString("id"), "出差", D.getJSONObject(1).getString("renew_time"), member_id,
+                            D.getJSONObject(2).getString("id"), "旅遊", D.getJSONObject(2).getString("renew_time"), member_id,
+                            D.getJSONObject(3).getString("id"), "電子發票", D.getJSONObject(3).getString("renew_time"), member_id
+                    };
+                    AddData(TB_NAME, col, data);
+                    Thread.sleep(500);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 }

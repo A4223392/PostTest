@@ -382,8 +382,8 @@ public class FriendshipActivity extends AppCompatActivity
                 DH = new DBHelper(FriendshipActivity.this);
                 db = DH.getReadableDatabase();
                 String msg = "";
-                cursor = db.rawQuery("SELECT id,member_id,friend_id,nickname,renew_time FROM mbr_friendship", null);
-
+                //好友
+                cursor = db.rawQuery("SELECT * FROM mbr_friendship", null);
                 int rowsCount = cursor.getCount();
                 if (rowsCount != 0) {
                     cursor.moveToFirst();
@@ -400,6 +400,87 @@ public class FriendshipActivity extends AppCompatActivity
                     }
                 }
                 txvRecord.append("\n好友列表(本機)：\n" + msg);
+                //分類
+                cursor = db.rawQuery("SELECT * FROM mbr_sort", null);
+                rowsCount = cursor.getCount();
+                if (rowsCount != 0) {
+                    cursor.moveToFirst();
+                    for (int i = 0; i < rowsCount; i++) {
+                        msg += cursor.getString(0) + " ";
+                        msg += cursor.getString(1) + " ";
+                        msg += cursor.getString(2) + " ";
+                        msg += cursor.getString(3) + " ";
+                        msg += cursor.getString(4) + " ";
+                        msg += cursor.getString(5) + " ";
+
+                        msg += "\n";
+
+                        cursor.moveToNext();
+                    }
+                }
+                txvRecord.append("\n分類(本機)：\n" + msg);
+
+                //子分類
+                cursor = db.rawQuery("SELECT * FROM mbr_subsort", null);
+                rowsCount = cursor.getCount();
+                if (rowsCount != 0) {
+                    cursor.moveToFirst();
+                    for (int i = 0; i < rowsCount; i++) {
+                        msg += cursor.getString(0) + " ";
+                        msg += cursor.getString(1) + " ";
+                        msg += cursor.getString(2) + " ";
+                        msg += cursor.getString(3) + " ";
+                        msg += cursor.getString(4) + " ";
+                        msg += cursor.getString(5) + " ";
+                        msg += cursor.getString(6) + " ";
+
+                        msg += "\n";
+
+                        cursor.moveToNext();
+                    }
+                }
+                txvRecord.append("\n子分類(本機)：\n" + msg);
+
+                //帳戶
+                cursor = db.rawQuery("SELECT * FROM mbr_account", null);
+                rowsCount = cursor.getCount();
+                if (rowsCount != 0) {
+                    cursor.moveToFirst();
+                    for (int i = 0; i < rowsCount; i++) {
+                        msg += cursor.getString(0) + " ";
+                        msg += cursor.getString(1) + " ";
+                        msg += cursor.getString(2) + " ";
+                        msg += cursor.getString(3) + " ";
+                        msg += cursor.getString(4) + " ";
+                        msg += cursor.getString(5) + " ";
+                        msg += cursor.getString(6) + " ";
+                        msg += cursor.getString(7) + " ";
+
+                        msg += "\n";
+
+                        cursor.moveToNext();
+                    }
+                }
+                txvRecord.append("\n帳戶(本機)：\n" + msg);
+
+                //專案
+                cursor = db.rawQuery("SELECT * FROM mbr_project", null);
+                rowsCount = cursor.getCount();
+                if (rowsCount != 0) {
+                    cursor.moveToFirst();
+                    for (int i = 0; i < rowsCount; i++) {
+                        msg += cursor.getString(0) + " ";
+                        msg += cursor.getString(1) + " ";
+                        msg += cursor.getString(2) + " ";
+                        msg += cursor.getString(3) + " ";
+
+                        msg += "\n";
+
+                        cursor.moveToNext();
+                    }
+                }
+                txvRecord.append("\n專案(本機)：\n" + msg);
+
                 db.close();
             }
         });
